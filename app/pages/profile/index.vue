@@ -1,0 +1,231 @@
+<template>
+  <div>
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-xl font-medium text-gray-800">Profile Information</h1>
+            <p class="text-sm text-gray-500">View and edit your profile information</p>
+        </div>
+      <Button
+        v-if="!editMode"
+        @click="editMode = true"
+        size="small"
+        icon="pi pi-pencil"
+        label="Edit Profile"
+      />
+    </div>
+    
+    <div class="bg-white rounded-lg border border-gray-200 p-6">
+      <div v-if="authStore.loading" class="text-center py-8">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mx-auto"></div>
+      </div>
+
+      <div v-else class="flex flex-col md:flex-row gap-8">
+        <!-- Profile Picture Section -->
+        <div class="md:w-1/3 flex flex-col items-center">
+          <div class="relative w-40 h-40 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden border-2 border-gray-200">
+            <div class="text-6xl text-gray-400">
+              {{ getInitials }}
+            </div>
+            <div v-if="editMode" class="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+              <label class="cursor-pointer p-2 bg-white rounded-full">
+                <i class="pi pi-camera text-gray-700"></i>
+                <input type="file" class="hidden" accept="image/*">
+              </label>
+            </div>
+          </div>
+          <div v-if="editMode" class="mt-4 text-center">
+            <p class="text-sm text-gray-500 mb-2">Click on the avatar to upload a new photo</p>
+            <p class="text-xs text-gray-400">JPG, GIF or PNG. Max size of 2MB</p>
+          </div>
+        </div>
+
+        <!-- Profile Form -->
+        <div class="md:w-2/3">
+          <form v-if="editMode" @submit.prevent="saveProfile" class="space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+            <InputText
+              v-model="form.first_name"
+              type="text"
+              size="small"
+              class="w-full capitalize px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            />
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Middle Name</label>
+            <InputText
+              v-model="form.middle_name"
+              type="text"
+              size="small"
+              class="w-full capitalize px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            />
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+            <InputText
+              v-model="form.last_name"
+              type="text"
+              size="small"
+              class="w-full capitalize px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            />
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">School Number</label>
+            <InputText
+              v-model="form.school_number"
+              type="text"
+              inputmode="numeric"
+              size="small"
+              pattern="[0-9]*"
+              class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              @input="form.school_number = $event.target.value.replace(/\D/g, '')"
+            />
+          </div>
+          
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <InputText
+              :value="authStore.user?.email"
+              type="email"
+              size="small"
+              disabled
+              class="w-full px-4 py-2 border rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
+            />
+          </div>
+        </div>
+        
+        <div class="flex justify-end space-x-2 pt-4">
+          <Button
+            type="button"
+            @click="resetForm"
+            size="small"
+            severity="secondary"
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            size="small"
+            :disabled="authStore.loading"
+          >
+            <span v-if="authStore.loading">Saving...</span>
+            <span v-else>Save Changes</span>
+          </Button>
+        </div>
+      </form>
+          
+          <!-- View Mode -->
+          <div v-else class="space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <p class="text-sm text-gray-500">First Name</p>
+                <p class="capitalize text-gray-900 font-medium">{{ form.first_name || 'Not set' }}</p>
+              </div>
+              
+              <div>
+                <p class="text-sm text-gray-500">Middle Name</p>
+                <p class="capitalize text-gray-900 font-medium">{{ form.middle_name || 'Not set' }}</p>
+              </div>
+              
+              <div>
+                <p class="text-sm text-gray-500">Last Name</p>
+                <p class="capitalize text-gray-900 font-medium">{{ form.last_name || 'Not set' }}</p>
+              </div>
+              
+              <div>
+                <p class="text-sm text-gray-500">School Number</p>
+                <p class="text-gray-900 font-medium">{{ form.school_number || 'Not set' }}</p>
+              </div>
+              
+              <div class="md:col-span-2">
+                <p class="text-sm text-gray-500">Email</p>
+                <p class="text-gray-900 font-medium">{{ authStore.user?.email || 'Not set' }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { useAuthStore } from '../../../stores/auth'
+import InputText from 'primevue/inputtext'
+
+definePageMeta({
+    middleware: 'auth',
+    layout: 'dashboard-layout'
+})
+
+const authStore = useAuthStore()
+const toast = useToast()
+
+const editMode = ref(false)
+const form = ref({
+  first_name: '',
+  last_name: '',
+  middle_name: '',
+  school_number: ''
+})
+
+onMounted(() => {
+  if (authStore.profile) {
+    Object.assign(form.value, authStore.profile)
+  }
+})
+
+// Watch for profile changes
+watch(() => authStore.profile, (newProfile) => {
+  if (newProfile) {
+    Object.assign(form.value, newProfile)
+  }
+}, { immediate: true })
+
+// Get user initials for profile picture
+const getInitials = computed(() => {
+  const first = form.value.first_name?.[0] || ''
+  const last = form.value.last_name?.[0] || ''
+  return (first + last).toUpperCase() || 'U'
+})
+
+// Reset form to original values and exit edit mode
+const resetForm = () => {
+  if (authStore.profile) {
+    Object.assign(form.value, authStore.profile)
+  }
+  editMode.value = false
+}
+
+// Save profile
+const saveProfile = async () => {
+  try {
+    const { error } = await authStore.updateProfile({
+      first_name: form.value.first_name,
+      last_name: form.value.last_name,
+      middle_name: form.value.middle_name,
+      school_number: form.value.school_number ? form.value.school_number.toString() : ''
+    })
+
+    if (error) throw error
+    
+    toast.add({
+      title: 'Success',
+      description: 'Profile updated successfully',
+      color: 'green'
+    })
+    editMode.value = false // Exit edit mode on successful save
+  } catch (error) {
+    console.error('Error saving profile:', error)
+    toast.add({
+      title: 'Error',
+      description: error.message || 'Failed to update profile',
+      color: 'red'
+    })
+  }
+}
+</script>
