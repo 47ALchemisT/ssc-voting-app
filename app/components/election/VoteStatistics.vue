@@ -37,7 +37,6 @@
             <div class="text-center mb-6">
               <h3 class="font-bold text-lg text-gray-800">{{ slotProps.data.title }}</h3>
               <p class="text-sm text-gray-500">{{ slotProps.data.candidates.length }} candidate{{ slotProps.data.candidates.length !== 1 ? 's' : '' }}</p>
-              <p v-if="slotProps.data.description" class="text-sm text-gray-500 mt-1">{{ slotProps.data.description }}</p>
             </div>
             
             <!-- Chart Container -->

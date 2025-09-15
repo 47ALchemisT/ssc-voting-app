@@ -83,7 +83,8 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from "vue"
+import { ref, computed, watch } from 'vue'
+import { useElectionStore } from '../../../../stores/elections'
 
 // Props & Emits
 const props = defineProps({
@@ -159,17 +160,18 @@ const resetForm = () => {
 }
 
 const submitForm = async () => {
-  if (!validateForm()) {
-    return
-  }
+  if (!validateForm()) return
   
   submitting.value = true
   
   try {
-    await emit("create", { ...form.value })
+    // Emit the create event with form data - let the parent handle the API call
+    emit('create', form.value)
+    
+    // Close the modal
     closeModal()
-  } catch (error) {
-    console.error("Error creating election:", error)
+  } catch (err) {
+    console.error('Error in form submission:', err)
   } finally {
     submitting.value = false
   }

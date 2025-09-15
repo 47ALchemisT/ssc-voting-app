@@ -87,10 +87,11 @@
 
 <script setup>
 import { ref, onMounted } from "vue"
+import { storeToRefs } from 'pinia'
 import { useToast } from "primevue/usetoast"
 import { useRouter } from 'vue-router'
 import CreateElectionModal from "./components/create.vue"
-import { useElections } from "../../../composables/useElections"
+import { useElectionStore } from '../../../stores/elections'
 
 definePageMeta({
   middleware: 'auth',
@@ -101,14 +102,10 @@ const toast = useToast()
 const router = useRouter()
 const showModal = ref(false)
 
-// Use the elections composable
-const { 
-  elections, 
-  loading, 
-  error, 
-  fetchElections, 
-  createElection 
-} = useElections()
+// Use the elections store
+const electionStore = useElectionStore()
+const { elections, loading, error } = storeToRefs(electionStore)
+const { fetchElections, createElection } = electionStore
 
 // Fetch elections on component mount
 onMounted(() => {

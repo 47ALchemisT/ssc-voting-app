@@ -198,6 +198,41 @@ export const useElectionStore = defineStore('elections', () => {
     }
   };
 
+  // Create a new election
+  const createElection = async (electionData) => {
+    loading.value = true;
+    clearError();
+    
+    try {
+      const { data, error: err } = await supabase
+        .from('elections')
+        .insert([{
+          title: electionData.title,
+          description: electionData.description,
+          start_date: electionData.startDate,
+          end_date: electionData.endDate,
+          status: 'upcoming' // You might want to add status management
+        }])
+        .select()
+        .single();
+
+      if (err) throw err;
+      
+      // Add the new election to the local state
+      if (data) {
+        elections.value = [data, ...elections.value];
+      }
+      
+      return { data, error: null };
+    } catch (err) {
+      error.value = err.message;
+      console.error('Error creating election:', err);
+      return { data: null, error: err.message };
+    } finally {
+      loading.value = false;
+    }
+  };
+
   return {
     // State
     elections,
@@ -210,6 +245,7 @@ export const useElectionStore = defineStore('elections', () => {
     getCurrentElections,
     getElectionPositions,
     getElectionCandidates,
+    createElection,
     clearError
   };
 });
