@@ -50,24 +50,35 @@
             @click="selectCandidate(position.id, candidate.id)"
           >
             <div class="flex items-center">
-              <div class="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                <span class="text-blue-600 font-medium">{{ candidate.name ? candidate.name.charAt(0) : '?' }}</span>
+              <div class="flex-shrink-0 h-36 w-36 rounded-lg bg-blue-100 flex items-center justify-center">
+                <img :src="candidate.avatar_url || candidate.user?.avatar_url || '/images/avatar/default.png'" alt="Candidate Avatar" class="h-full w-full object-cover rounded-lg">
               </div>
-              <div class="ml-4">
-                <h4 class="text-base font-medium text-gray-900">{{ candidate.name || 'Unknown Candidate' }}</h4>
-                <p class="text-sm text-gray-500">Running for {{ position.name }}</p>
-              </div>
-              <div class="ml-auto">
-                <div class="h-5 w-5 rounded-full border-2 flex items-center justify-center"
-                     :class="{ 'bg-blue-500 border-blue-500': selectedVotes[position.id] === candidate.id, 'border-gray-300': selectedVotes[position.id] !== candidate.id }">
-                  <i v-if="selectedVotes[position.id] === candidate.id" class="pi pi-check text-white text-xs"></i>
+              <div class="ml-4 flex justify-between w-full">
+                <div>
+                  <h4 class="text-base font-medium text-gray-900">{{ candidate.name || 'Unknown Candidate' }}</h4>
+                  <p class="text-sm text-gray-500">Running for {{ position.name }}</p>
+                  <div v-if="candidate.platform && typeof candidate.platform === 'string'" class="mt-3 text-sm text-gray-600">
+                    <p class="font-medium text-gray-800">Platform:</p>
+                    <p v-if="!expandedPlatforms[candidate.id]" class="mt-1 text-gray-600 line-clamp-2">{{ candidate.platform }}</p>
+                    <p v-else class="mt-1 text-gray-600">{{ candidate.platform }}</p>
+                    <span
+                      class="mt-1 p-0 text-blue-500 font-medium"
+                      @click.stop="togglePlatform(candidate.id)"
+                    >
+                      {{ expandedPlatforms[candidate.id] ? 'See less' : 'See more' }}
+                    </span>
+                  </div>
+                </div>
+                <!--checkbox-->
+                <div class="ml-4">
+                  <div class="h-5 w-5 rounded-full border-2 flex items-center justify-center"
+                       :class="{ 'bg-blue-500 border-blue-500': selectedVotes[position.id] === candidate.id, 'border-gray-300': selectedVotes[position.id] !== candidate.id }">
+                    <i v-if="selectedVotes[position.id] === candidate.id" class="pi pi-check text-white text-xs"></i>
+                  </div>
                 </div>
               </div>
             </div>
-            <div v-if="candidate.platform && typeof candidate.platform === 'string'" class="mt-3 text-sm text-gray-600 bg-gray-50 p-3 rounded">
-              <p class="font-medium">Platform:</p>
-              <p class="mt-1">{{ candidate.platform }}</p>
-            </div>
+
           </div>
           
           <!-- No candidates -->
@@ -78,7 +89,7 @@
       </div>
 
       <!-- Submit Button -->
-      <div class="sticky bottom-0 bg-white border-t border-gray-200 -mx-6 p-4 shadow-lg">
+      <div class="sticky bottom-0 bg-white border rounded-lg border-gray-200 -mx-6 p-4 shadow-sm">
         <div class="max-w-4xl mx-auto">
           <div class="flex flex-col space-y-2">
             <!-- Voting Progress -->
@@ -142,6 +153,8 @@ const selectedVotes = ref({});
 const loading = ref(true);
 const isSubmitting = ref(false);
 const error = ref(null);
+// Track expanded/collapsed state per candidate for platform text
+const expandedPlatforms = ref({});
 
 // Computed
 const getCandidatesByPosition = (positionId) => {
@@ -180,6 +193,7 @@ const getCandidatesByPosition = (positionId) => {
     return {
       id: candidate.id,
       name: fullName,
+      avatar_url: candidate.avatar_url,
       position_id: candidate.position_id || (candidate.position?.id || null),
       position: positionTitle,
       platform: candidate.platform || 'No platform provided',
@@ -192,6 +206,9 @@ const getCandidatesByPosition = (positionId) => {
 };
 
 // Methods
+const togglePlatform = (id) => {
+  expandedPlatforms.value[id] = !expandedPlatforms.value[id];
+};
 const selectCandidate = (positionCode, candidateId) => {
   // If clicking the same candidate, deselect
   if (selectedVotes.value[positionCode] === candidateId) {

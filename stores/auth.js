@@ -4,6 +4,7 @@ import { useSupabaseClient } from '#imports'
 export const useAuthStore = defineStore('auth', () => {
   const supabase = useSupabaseClient()
   const user = useSupabaseUser()
+  const users = ref([])
   const profile = ref(null)
   const loading = ref(false)
 
@@ -105,6 +106,51 @@ export const useAuthStore = defineStore('auth', () => {
       loading.value = false
     }
   }
+  // Upload avatar and update profile
+  const uploadAvatar = async (file) => {
+    if (!user.value) return { data: null, error: 'Not authenticated' }
+
+    try {
+      loading.value = true
+
+      // Create a unique file path (user-id + filename)
+      const filePath = `assets/${user.value.id}-${Date.now()}-${file.name}`
+
+      // Upload to Supabase storage
+      const { error: uploadError } = await supabase.storage
+        .from('assets') // bucket name in Supabase
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true
+        })
+
+      if (uploadError) throw uploadError
+
+      // Get public URL
+      const { data } = supabase.storage.from('assets').getPublicUrl(filePath)
+      const publicUrl = data.publicUrl
+
+      // Save URL to profile
+      const { data: updatedProfile, error: updateError } = await supabase
+        .from('user_profile')
+        .update({ avatar_url: publicUrl })
+        .eq('user_id', user.value.id)
+        .select()
+        .single()
+
+      if (updateError) throw updateError
+
+      // Update local state
+      profile.value = { ...profile.value, avatar_url: publicUrl }
+
+      return { data: updatedProfile, error: null }
+    } catch (error) {
+      console.error('Error uploading avatar:', error)
+      return { data: null, error }
+    } finally {
+      loading.value = false
+    }
+  }
 
   const signUp = async (email, password, profileData = {}) => {
     try {
@@ -165,19 +211,6 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  const updateAuthData = async (updates) => {
-    try {
-      const { data, error } = await supabase.auth.updateUser({
-        data: updates
-      })
-
-      if (error) throw error
-      return { data, error: null }
-    } catch (error) {
-      return { data: null, error }
-    }
-  }
-
   // Watch for auth state changes to update profile
   watch(user, (newUser) => {
     if (newUser) {
@@ -187,8 +220,39 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }, { immediate: true })
 
+  const fetchAllUsers = async () => {
+    try {
+      loading.value = true
+      
+      // Get user profiles with auth data
+      const { data: profiles, error } = await supabase
+        .from('user_profile')
+        .select('*')
+        .order('created_at', { ascending: false })
+      
+      if (error) throw error
+      
+      // Transform the data
+      const formattedUsers = profiles.map(profile => ({
+        ...profile,
+        email: profile.auth_users?.email || 'No email',
+        last_sign_in: profile.auth_users?.last_sign_in_at,
+        created_at: profile.created_at
+      }))
+      
+      users.value = formattedUsers
+      return { data: formattedUsers, error: null }
+    } catch (error) {
+      console.error('Error fetching users:', error)
+      return { data: null, error: error.message }
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     user,
+    users,
     profile,
     loading,
     isAuthenticated,
@@ -196,7 +260,9 @@ export const useAuthStore = defineStore('auth', () => {
     signUp,
     signIn,
     signOut,
+    fetchProfile,
     updateProfile,
-    fetchProfile
+    uploadAvatar,
+    fetchAllUsers
   }
 })

@@ -23,13 +23,23 @@
         <!-- Profile Picture Section -->
         <div class="md:w-1/3 flex flex-col items-center">
           <div class="relative w-40 h-40 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden border-2 border-gray-200">
-            <div class="text-6xl text-gray-400">
+            <img
+              v-if="authStore.profile?.avatar_url"
+              :src="authStore.profile.avatar_url"
+              alt="Profile avatar"
+              class="w-full h-full object-cover"
+            />
+            <div v-else class="text-6xl text-gray-400">
               {{ getInitials }}
             </div>
-            <div v-if="editMode" class="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-              <label class="cursor-pointer p-2 bg-white rounded-full">
-                <i class="pi pi-camera text-gray-700"></i>
-                <input type="file" class="hidden" accept="image/*">
+            <div
+              v-if="editMode"
+              class="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"
+            >
+              <label class="cursor-pointer p-2 bg-white rounded-full flex items-center gap-2">
+                <i v-if="!uploadingAvatar" class="pi pi-camera text-gray-700"></i>
+                <i v-else class="pi pi-spin pi-spinner text-gray-700"></i>
+                <input type="file" class="hidden" accept="image/*" @change="onAvatarSelected" />
               </label>
             </div>
           </div>
@@ -192,6 +202,40 @@ const getInitials = computed(() => {
   const last = form.value.last_name?.[0] || ''
   return (first + last).toUpperCase() || 'U'
 })
+
+// Avatar upload handling
+const uploadingAvatar = ref(false)
+const onAvatarSelected = async (event) => {
+  const file = event?.target?.files?.[0]
+  if (!file) return
+
+  // Basic validation: type and size (max ~2MB)
+  if (!file.type.startsWith('image/')) {
+    toast.add({ title: 'Invalid file', description: 'Please select an image file.', color: 'red' })
+    return
+  }
+  const maxBytes = 2 * 1024 * 1024
+  if (file.size > maxBytes) {
+    toast.add({ title: 'File too large', description: 'Image must be under 2MB.', color: 'red' })
+    return
+  }
+
+  try {
+    uploadingAvatar.value = true
+    const { error } = await authStore.uploadAvatar(file)
+    if (error) throw error
+
+    // Success feedback
+    toast.add({ title: 'Avatar Updated', description: 'Your profile photo was updated successfully.', color: 'green' })
+  } catch (err) {
+    console.error('Avatar upload failed:', err)
+    toast.add({ title: 'Upload failed', description: err.message || 'Could not upload avatar.', color: 'red' })
+  } finally {
+    uploadingAvatar.value = false
+    // Clear the input value so selecting the same file again still triggers change
+    if (event?.target) event.target.value = ''
+  }
+}
 
 // Reset form to original values and exit edit mode
 const resetForm = () => {

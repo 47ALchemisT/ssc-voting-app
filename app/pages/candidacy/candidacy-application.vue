@@ -101,23 +101,43 @@
             </div>
             </div>
 
-            <div class="flex justify-end space-x-3 pt-4">
-            <Button
-                type="button"
-                label="Cancel"
-                severity="secondary"
-                @click="$router.back()"
-            />
-            <Button
-                type="submit"
-                label="Submit Application"
-                :loading="submitting"
-                :disabled="submitting"
-            />
+            <div class="flex justify-end space-x-3">
+              <Button
+                  type="button"
+                  label="Cancel"
+                  severity="secondary"
+                  @click="$router.back()"
+              />
+              <Button
+                  type="submit"
+                  label="Submit Application"
+                  :loading="submitting"
+                  :disabled="submitting"
+              />
             </div>
         </form>
         </div>
     </div>
+
+    <!-- Success Modal (PrimeVue Dialog) -->
+    <Dialog v-model:visible="showSuccessModal" modal header="Application Submitted" :style="{ width: '28rem' }">
+      <div class="flex items-start">
+        <i class="pi pi-check-circle text-emerald-500 text-2xl mr-3"></i>
+        <div>
+          <p class="text-sm text-gray-700">Your candidacy application has been submitted for review. You will be notified once it has been processed.</p>
+        </div>
+      </div>
+      <div class="mt-6 flex justify-end gap-2">
+        <Button 
+          type="button" 
+          label="Confirm" 
+          draggable="false"
+          size="small"
+          @click="onSuccessConfirm" 
+        />
+      </div>
+    </Dialog>
+
   </div>
 </template>
 
@@ -187,24 +207,27 @@ const availablePositions = [
   '2nd Year Representative'
 ]
 
+// Success modal state and handler
+const showSuccessModal = ref(false)
+const onSuccessConfirm = () => {
+  showSuccessModal.value = false
+  navigateTo('/candidacy')
+}
+
 // Fetch active elections
 const fetchElections = async () => {
   try {
     loading.value = true
     
     // Fetch all elections using the store
-    const { data, error } = await electionStore.fetchElections()
+    const { data, error: fetchError } = await electionStore.fetchElections()
     
-    if (error) throw error
-    
-    // Filter for active elections (you can adjust this logic based on your needs)
-    const now = new Date()
-    elections.value = (data || []).filter(election => {
-      const start = new Date(election.start_date)
-      const end = new Date(election.end_date)
-      return start <= now && now <= end
-    })
-    
+    if (fetchError) throw fetchError
+    // Keep only elections open for application: upcoming or ongoing
+    elections.value = (data || []).filter(e =>
+      e.status === 'upcoming' || e.status === 'ongoing'
+    )
+
     if (elections.value.length === 0) {
       error.value = 'There are no active elections at this time.'
       return
@@ -261,24 +284,16 @@ const submitApplication = async () => {
   try {
     submitting.value = true
     
-    const { data, error } = await candidacyStore.submitApplication(
+    const { data, error: submitError } = await candidacyStore.submitApplication(
       selectedElection.value,
       form.value.position,
       form.value.platform
     )
     
-    if (error) throw error
-    
-    // Show success message
-    useToast().add({
-      severity: 'success',
-      summary: 'Application Submitted',
-      detail: 'Your candidacy application has been submitted for review.',
-      life: 5000
-    })
-    
-    // Redirect to candidacy page
-    navigateTo('/candidacy')
+    if (submitError) throw submitError
+
+    // Show success modal instead of immediate redirect
+    showSuccessModal.value = true
     
   } catch (err) {
     console.error('Error submitting application:', err)

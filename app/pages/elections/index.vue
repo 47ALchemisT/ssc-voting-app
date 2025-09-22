@@ -26,6 +26,7 @@
         <!-- Create New Election -->
         <div>
           <Button 
+            v-if="authStore.isAdmin && !hasActiveElections"
             label="Create New Election"
             icon="pi pi-plus"
             severity="primary"
@@ -43,35 +44,76 @@
       </div>
 
       <!-- Elections list -->
-      <ul v-else class="space-y-3">
-        <li 
-          v-for="election in elections" 
-          :key="election.id"
-          class="p-4 rounded-lg bg-gray-50/50 border gap-6 border-gray-200 flex justify-between"
-        >
-          <div>
-            <div class="font-medium">{{ election.title }}</div>
-            <div class="text-sm text-gray-500 mt-1">{{ election.description }}</div>
-            <div class="text-xs mt-3 text-medium text-gray-500">
-              {{ formatDateRange(election.start_date, election.end_date) }}
+      <div class="space-y-6">
+        <!-- Current Election Section -->
+        <div v-if="currentElection" class="space-y-3">
+          <h4 class="text-sm font-medium text-gray-700">Current Election</h4>
+          <div class="p-4 rounded-lg border border-blue-200 bg-blue-50/50">
+            <div class="flex justify-between items-start">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="font-medium text-blue-800">{{ currentElection.title }}</span>
+                  <span class="px-2 py-0.5 mt-3 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                    Current Election
+                  </span>
+                </div>
+                <p class="text-sm text-blue-700 mt-1">{{ currentElection.description }}</p>
+                <div class="text-xs mt-3 font-medium text-blue-600">
+                  {{ formatDateRange(currentElection.start_date, currentElection.end_date) }}
+                </div>
+              </div>
+              <div class="flex gap-2">
+                <NuxtLink :to="`/elections/${currentElection.id}`">
+                  <Button label="View" icon="pi pi-eye" outlined size="small" />
+                </NuxtLink>
+                <Button 
+                  label="Results" 
+                  icon="pi pi-chart-bar" 
+                  outlined 
+                  size="small" 
+                  @click="navigateToResults(currentElection.id)"
+                />
+              </div>
             </div>
           </div>
-          <div class="flex gap-2">
-            <NuxtLink :to="`/elections/${election.id}`">
-              <Button label="View" icon="pi pi-eye" outlined size="small" />
-            </NuxtLink>
-            <div>
-              <Button 
-                label="Results" 
-                icon="pi pi-chart-bar" 
-                outlined 
-                size="small" 
-                @click="navigateToResults(election.id)"
-              />
-            </div>
-          </div>
-        </li>
-      </ul>
+        </div>
+
+        <!-- Past Elections Section -->
+        <div v-if="pastElections.length > 0" class="space-y-3">
+          <h4 class="text-sm font-medium text-gray-700">Past Elections</h4>
+          <ul class="space-y-3">
+            <li 
+              v-for="election in pastElections" 
+              :key="election.id"
+              class="p-4 rounded-lg border border-gray-200 bg-white bg-gray-50/50"
+            >
+              <div class="flex justify-between gap-10">
+                <div>
+                  <div class="font-medium text-gray-800">{{ election.title }}</div>
+                  <p class="text-sm text-gray-600 mt-3">{{ election.description }}</p>
+                  <div class="text-xs font-medium mt-3 text-gray-500">
+                    {{ formatDateRange(election.start_date, election.end_date) }}
+                  </div>
+                </div>
+                <div class="flex gap-2">
+                  <NuxtLink :to="`/elections/${election.id}`">
+                    <Button label="View" icon="pi pi-eye" outlined size="small" />
+                  </NuxtLink>
+                  <div>
+                    <Button 
+                      label="Results" 
+                      icon="pi pi-chart-bar" 
+                      outlined 
+                      size="small" 
+                      @click="navigateToResults(election.id)"
+                    />
+                  </div>
+                </div>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
     </div>
 
     <!-- Success Toast -->
@@ -86,21 +128,39 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue"
+import { ref, onMounted, computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useToast } from "primevue/usetoast"
 import { useRouter } from 'vue-router'
 import CreateElectionModal from "./components/create.vue"
 import { useElectionStore } from '../../../stores/elections'
+import { useAuthStore } from '../../../stores/auth'
 
 definePageMeta({
   middleware: 'auth',
   layout: 'dashboard-layout'
 })
 
+const authStore = useAuthStore();
 const toast = useToast()
 const router = useRouter()
 const showModal = ref(false)
+
+// Computed properties for current and past elections
+const currentElection = computed(() => {
+  return elections.value.find(e => e.is_current === 1) || null
+})
+
+const pastElections = computed(() => {
+  return elections.value.filter(e => e.is_current !== 1)
+})
+
+// Check if there are any active elections
+const hasActiveElections = computed(() => {
+  return elections.value.some(election => 
+    electionStore.isElectionActive(election)
+  )
+})
 
 // Use the elections store
 const electionStore = useElectionStore()

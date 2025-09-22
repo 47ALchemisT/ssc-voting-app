@@ -14,9 +14,9 @@
       <div class="bg-blue-50 p-4 rounded-lg text-left mb-8">
         <h3 class="font-medium text-blue-800 mb-2">Your Selections</h3>
         <ul class="space-y-3">
-          <li v-for="vote in votes" :key="vote.position_id" class="flex justify-between">
-            <span class="text-gray-700">{{ getPositionName(vote.position_id) }}:</span>
-            <span class="font-medium text-gray-900">{{ getCandidateName(vote.candidate_id) }}</span>
+          <li v-for="vote in votes" :key="vote.id" class="flex justify-between">
+            <span class="text-gray-700">{{ vote?.candidate?.position?.title || 'Unknown Position' }}:</span>
+            <span class="font-medium text-gray-900">{{ getCandidateFullName(vote) }}</span>
           </li>
         </ul>
       </div>
@@ -72,15 +72,13 @@ const isElectionEnded = computed(() => {
   return new Date(election.value.end_date) < new Date();
 });
 
-// Methods
-const getPositionName = (positionId) => {
-  const position = positions.value.find(p => p.id === positionId);
-  return position?.name || 'Unknown Position';
-};
-
-const getCandidateName = (candidateId) => {
-  const candidate = candidates.value.find(c => c.id === candidateId);
-  return candidate?.name || 'Unknown Candidate';
+const getCandidateFullName = (vote) => {
+  const user = vote?.candidate?.user;
+  if (!user) return 'Unknown Candidate';
+  const first = user.first_name || '';
+  const last = user.last_name || '';
+  const full = `${first} ${last}`.trim();
+  return full || 'Unknown Candidate';
 };
 
 const navigateToElection = () => {
@@ -105,7 +103,7 @@ const fetchData = async () => {
     const userVotes = await voteStore.getUserVotes(authStore.profile?.id, electionId);
     votes.value = userVotes;
     
-    // Fetch positions and candidates for display
+    // Optionally fetch candidates for any additional display needs
     candidates.value = await electionStore.getElectionCandidates(electionId);
     
   } catch (error) {

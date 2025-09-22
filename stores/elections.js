@@ -14,6 +14,31 @@ export const useElectionStore = defineStore('elections', () => {
     error.value = null;
   };
 
+  const updateElectionStatus = async (id, status, isCurrent = null) => {
+    clearError();
+    try {
+      const updateData = { status };
+      if (isCurrent !== null) {
+        updateData.is_current = isCurrent;
+      }
+      
+      const { data, error: err } = await supabase
+        .from('elections')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single();
+  
+      if (err) throw err;
+  
+      return { data, error: null };
+    } catch (err) {
+      error.value = err.message;
+      console.error('Error updating election status:', err);
+      return { data: null, error: err.message };
+    }
+  };
+
   // Fetch all elections
   const fetchElections = async () => {
     loading.value = true;
@@ -23,7 +48,8 @@ export const useElectionStore = defineStore('elections', () => {
       const { data, error: err } = await supabase
         .from('elections')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('is_current', { ascending: false }) // Current election first
+        .order('created_at', { ascending: false }); // Then sort by creation date
 
       if (err) throw err;
       
@@ -64,13 +90,11 @@ export const useElectionStore = defineStore('elections', () => {
     clearError();
     
     try {
-      const now = new Date().toISOString();
-      
+      // Get elections where is_current = 1 (active)
       const { data, error: err } = await supabase
         .from('elections')
         .select('*')
-        .lte('start_date', now)
-        .gte('end_date', now)
+        .eq('is_current', 1)
         .order('created_at', { ascending: false });
 
       if (err) throw err;
@@ -125,19 +149,17 @@ export const useElectionStore = defineStore('elections', () => {
         .from('candidacy_application')
         .select(`
           *,
-          user:user_id (id, first_name, last_name),
+          user:user_id (*),
           position:position_id (*)
         `)
         .eq('election_id', electionId)
         .eq('status', 1) // Only get approved candidates (status = 1)
         .order('position_id', { ascending: true });
 
-      if (err) throw err;
-      
-      console.log('Raw candidates data from DB:', data);
+      if (err) return { data: null, error: err };
       
       // Format the data for easier use in components
-      return (data || []).map(candidate => {
+      const formattedData = (data || []).map(candidate => {
         const position = candidate.position || {};
         const user = candidate.user || {};
         
@@ -179,7 +201,8 @@ export const useElectionStore = defineStore('elections', () => {
           user: {
             id: user.id,
             first_name: firstName,
-            last_name: lastName
+            last_name: lastName,
+            avatar_url: user.avatar_url || null
           },
           position: {
             id: position.id,
@@ -187,14 +210,24 @@ export const useElectionStore = defineStore('elections', () => {
             order: position.order || 0,
             description: position.description || ''
           },
+          // Convenience alias for UIs
+          avatar_url: user.avatar_url || null,
           // For backward compatibility
           name: fullName,
           position_name: position.title || 'Unknown Position'
         };
       });
+      
+      return { 
+        data: formattedData, 
+        error: null 
+      };
     } catch (err) {
       console.error('Error fetching election candidates:', err);
-      throw err;
+      return { 
+        data: null, 
+        error: err 
+      };
     }
   };
 
@@ -211,7 +244,8 @@ export const useElectionStore = defineStore('elections', () => {
           description: electionData.description,
           start_date: electionData.startDate,
           end_date: electionData.endDate,
-          status: 'upcoming' // You might want to add status management
+          status: 'upcoming', // You might want to add status management
+          is_current: 1
         }])
         .select()
         .single();
@@ -233,6 +267,12 @@ export const useElectionStore = defineStore('elections', () => {
     }
   };
 
+  // Check if an election is active based on its status
+  const isElectionActive = (election) => {
+    if (!election || !election.status) return false;
+    return election.status === 'ongoing' || election.status === 'upcoming';
+  };
+
   return {
     // State
     elections,
@@ -246,6 +286,8 @@ export const useElectionStore = defineStore('elections', () => {
     getElectionPositions,
     getElectionCandidates,
     createElection,
+    updateElectionStatus,
+    isElectionActive,
     clearError
   };
 });

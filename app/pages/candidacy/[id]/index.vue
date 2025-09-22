@@ -13,6 +13,19 @@
       </template>
     </Dialog>
 
+    <!-- Result Dialog -->
+    <Dialog v-model:visible="showResultDialog" modal header="Action Completed" :style="{ width: '450px' }" :closable="false">
+      <div class="flex flex-col items-center">
+        <i class="pi pi-check-circle text-5xl text-emerald-500 mb-4"></i>
+        <p class="text-center mb-6">{{ resultMessage }}</p>
+      </div>
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <Button label="OK" size="small" @click="onResultOk" />
+        </div>
+      </template>
+    </Dialog>
+
     <Dialog v-model:visible="showRejectDialog" modal header="Confirm Rejection" :style="{ width: '450px' }" :closable="false">
       <div class="flex flex-col items-center">
         <i class="pi pi-times-circle text-5xl text-red-500 mb-4"></i>
@@ -59,13 +72,17 @@
           <!-- Left Column -->
           <div class="col-span-1">
             <div class="bg-gray-50 p-4 rounded-lg text-center">
-              <Avatar 
-                :image="application.user?.avatar_url || 'https://via.placeholder.com/150'" 
-                :label="application.user?.first_name ? application.user.first_name[0] + (application.user.last_name ? application.user.last_name[0] : '') : '?'" 
-                size="xlarge" 
-                shape="circle" 
-                class="mx-auto mb-4 w-32 h-32 text-4xl"
-              />
+              <div class="mx-auto mb-4 w-48 h-48 rounded-lg overflow-hidden flex items-center justify-center bg-gray-200">
+                <img
+                  v-if="application.user?.avatar_url"
+                  :src="application.user.avatar_url"
+                  alt="User avatar"
+                  class="w-full h-full object-cover"
+                />
+                <span v-else class="text-4xl text-gray-500">
+                  {{ application.user?.first_name ? application.user.first_name[0] + (application.user.last_name ? application.user.last_name[0] : '') : '?' }}
+                </span>
+              </div>
               <h2 class="text-xl font-semibold">{{ application.user?.first_name }} {{ application.user?.last_name }}</h2>
               <p class="text-gray-500 text-sm">{{ application.user?.email }}</p>
               
@@ -84,7 +101,7 @@
                 </div>
               </div>
             </div>
-            <div class="mt-6 pt-6 border-t border-gray-200">
+            <div v-if="authStore.isAdmin" class="mt-6 pt-6 border-t border-gray-200">
                 <h4 class="text-sm font-medium text-gray-500 mb-4">ADMIN ACTIONS</h4>
                 <div class="flex gap-3">
                     <Button 
@@ -147,6 +164,7 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useCandidacyApplicationStore } from '../../../../stores/candidacy_application'
 import { useAuth } from '../../../../composables/useAuth'
+import {useAuthStore} from '../../../../stores/auth'
 
 definePageMeta({
     layout: 'dashboard-layout',
@@ -154,15 +172,17 @@ definePageMeta({
 })
 
 const route = useRoute()
+const authStore = useAuthStore()
 const router = useRouter()
 const applicationId = route.params.id
 const loading = ref(true)
 const error = ref(null)
 const application = ref(null)
 const updating = ref(false)
-const isAdmin = ref(false)
 const showApproveDialog = ref(false)
 const showRejectDialog = ref(false)
+const showResultDialog = ref(false)
+const resultMessage = ref('')
 
 const candidacyStore = useCandidacyApplicationStore()
 
@@ -214,13 +234,9 @@ const confirmUpdateStatus = async (status) => {
     // Update local state to reflect the change
     application.value.status = status
     
-    // Show success message
-    useToast().add({
-      severity: 'success',
-      summary: 'Success',
-      detail: `Application ${status === 1 ? 'approved' : status === 2 ? 'rejected' : 'reset to pending'} successfully`,
-      life: 3000
-    })
+    // Show success dialog and navigate back after confirmation
+    resultMessage.value = `Application ${status === 1 ? 'approved' : status === 2 ? 'rejected' : 'reset to pending'} successfully.`
+    showResultDialog.value = true
   } catch (err) {
     console.error('Error updating application status:', err)
     error.value = err.message || 'Failed to update application status'
@@ -269,4 +285,9 @@ onMounted(async () => {
     loading.value = false
   }
 })
+
+// Result dialog OK handler
+const onResultOk = () => {
+  showResultDialog.value = false
+}
 </script>

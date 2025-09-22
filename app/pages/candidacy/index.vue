@@ -7,7 +7,8 @@
       </div>
       <Button
         label="Apply for Candidacy"
-        icon="pi pi-plus"
+        icon="pi pi-file-edit"
+        size="small"
         @click="navigateToCandidacyApplication"
       />
     </div>
@@ -36,8 +37,9 @@
         <h3 class="text-lg font-medium text-gray-900 mb-1">No applications yet</h3>
         <p class="text-gray-500 mb-6">You haven't submitted any candidacy applications yet.</p>
         <Button
-          label="Apply Now"
-          icon="pi pi-plus"
+          label="Apply for Candidacy"
+          icon="pi pi-file-edit"
+          size="small"
           @click="navigateToCandidacyApplication"
         />
       </div>
@@ -46,7 +48,7 @@
         <div 
           v-for="app in applications" 
           :key="app.id" 
-          class="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
+          class="bg-gray-50/50 rounded-lg border border-gray-200 overflow-hidden"
         >
           <div class="p-6">
             <div class="flex justify-between items-start">
@@ -74,7 +76,18 @@
 
             <div class="flex items-center mt-4">
               <div class="flex-shrink-0 h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
-                <span class="text-gray-500">{{ app.user?.first_name?.[0] || 'U' }}</span>
+                <Avatar
+                  v-if="app.user?.avatar_url"
+                  :image="app.user.avatar_url"
+                  class="w-full h-full"
+                  shape="circle"
+                />
+                <Avatar
+                  v-else
+                  :label="(app.user?.first_name?.[0] || 'U').toUpperCase()"
+                  class="w-full h-full bg-gray-200 text-gray-600"
+                  shape="circle"
+                />
               </div>
               <div class="ml-3">
                 <p class="text-sm font-medium text-gray-900">
@@ -90,17 +103,41 @@
               <div class="text-sm text-gray-500">
                 Applied on {{ formatDate(app.created_at) }}
               </div>
-              <Button 
-                label="View Details" 
-                size="small" 
-                text 
-                @click="viewApplication(app.id)"
-              />
+              <div class="flex items-center gap-2">
+                <Button 
+                  icon="pi pi-trash"
+                  label="Cancel Application" 
+                  size="small" 
+                  variant="outlined"
+                  @click="openCancelDialog(app.id)"
+                />
+                <Button 
+                  icon="pi pi-eye"
+                  label="View Details" 
+                  size="small" 
+                  @click="viewApplication(app.id)"
+                />
+
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
+    
+    <!-- Cancel Confirmation Modal (PrimeVue Dialog) -->
+    <Dialog v-model:visible="showCancelDialog" modal header="Cancel Application" :style="{ width: '28rem' }">
+      <div class="flex items-start">
+        <i class="pi pi-exclamation-triangle text-orange-500 text-2xl mr-3"></i>
+        <div>
+          <p class="text-sm text-gray-700">Are you sure you want to delete this application? This action cannot be undone.</p>
+        </div>
+      </div>
+      <div class="mt-6 flex justify-end gap-2">
+        <Button type="button" label="No, Keep" severity="secondary" size="small" @click="showCancelDialog = false" />
+        <Button type="button" label="Yes, Delete" size="small" @click="handleCancelConfirmed" />
+      </div>
+    </Dialog>
   </div>
 </template>
 
@@ -154,11 +191,35 @@ const formatDate = (dateString) => {
 }
 
 const viewApplication = (id) => {
-  navigateTo(`/candidacy/application/${id}`)
+  navigateTo(`/candidacy/${id}`)
 }
 
 const navigateToCandidacyApplication = () => {
   navigateTo('/candidacy/candidacy-application')
+}
+
+// Cancel application with PrimeVue Dialog confirmation
+const showCancelDialog = ref(false)
+const cancelTargetId = ref(null)
+
+const openCancelDialog = (id) => {
+  cancelTargetId.value = id
+  showCancelDialog.value = true
+}
+
+const handleCancelConfirmed = async () => {
+  if (!cancelTargetId.value) return
+  try {
+    const { error: deleteError } = await candidacyStore.cancelApplication(cancelTargetId.value)
+    if (deleteError) throw deleteError
+    // Update local list immediately
+    applications.value = applications.value.filter(app => app.id !== cancelTargetId.value)
+    showCancelDialog.value = false
+    cancelTargetId.value = null
+  } catch (err) {
+    console.error('Error canceling application:', err)
+    error.value = 'Failed to cancel application. Please try again.'
+  }
 }
 
 // Fetch applications when component mounts

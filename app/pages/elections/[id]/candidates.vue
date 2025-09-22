@@ -108,9 +108,9 @@
           </template>
         </Column>
         
-        <Column header="Status" style="width: 120px">
+        <Column header="Actions" style="width: 120px">
           <template #body="{ data }">
-            <Tag value="Active" severity="success" />
+            <Button icon="pi pi-eye" label="View" variant="outlined" size="small" @click="viewApplication(data.id)" />
           </template>
         </Column>
       </DataTable>
@@ -183,6 +183,10 @@ async function loadCandidates() {
 function handleApplicationsUpdated() {
   // Refresh the candidates list when pending applications are updated
   loadCandidates()
+}
+
+function viewApplication(id) {
+  router.push(`/candidacy/${id}`)
 }
 
 function navigateBack() {

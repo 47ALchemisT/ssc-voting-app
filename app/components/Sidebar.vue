@@ -17,7 +17,7 @@
     <!-- Dynamic Menu -->
     <div class="flex-1 overflow-y-auto">
       <nav class="p-4 space-y-8 overflow-y-auto flex-1">
-        <template v-for="(section, index) in items.filter(section => section.items.some(item => item.label !== 'Logout'))" :key="index">
+        <template v-for="(section, index) in visibleSections" :key="index">
           <div>
             <transition name="fade">
               <h3 v-if="section.label && !collapsed" class="text-gray-500 font-bold text-xs uppercase tracking-wide mb-3">
@@ -25,14 +25,14 @@
               </h3>
             </transition>
             <ul class="space-y-1">
-              <li v-for="(item, i) in section.items.filter(item => item.label !== 'Logout')" :key="i">
+              <li v-for="(item, i) in section.items" :key="i">
                 <div class="group relative">
                   <NuxtLink
                     :to="item.to || '/dashboard'"
                     @click="handleItemClick(item)"
                     :class="[
                       'w-full flex items-center px-3 text-sm py-2 rounded-lg text-left transition-colors duration-150 no-underline',
-                      activeItem === item.key
+                      activeKey === item.key
                         ? 'bg-blue-700 text-white font-medium'
                         : 'text-gray-700 hover:bg-gray-200'
                     ]"
@@ -71,8 +71,14 @@
       <div class="w-full p-3 bg-white border border-gray-200 rounded-lg">
         <div class="flex justify-between items-start">
           <div class="">
-            <div class="w-10 h-10 bg-blue-700 rounded-full flex-shrink-0 flex items-center justify-center">
-              <span class="text-white font-semibold text-sm">
+            <div class="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden bg-blue-700">
+              <img
+                v-if="authStore.profile?.avatar_url"
+                :src="authStore.profile.avatar_url"
+                alt="User avatar"
+                class="w-full h-full object-cover"
+              />
+              <span v-else class="text-white font-semibold text-sm">
                 {{ authStore.profile?.first_name?.charAt(0)?.toUpperCase() || 'U' }}
               </span>
             </div>
@@ -134,8 +140,7 @@ const logout = () => {
 }
 
 const handleItemClick = (item) => {
-  setActiveItem(item.key)
-  // Close mobile sidebar after clicking a link
+  // active state is derived from route; only handle mobile close here
   if (window.innerWidth < 1024) {
     emit('toggle')
   }
@@ -149,54 +154,49 @@ const items = ref([
       { label: 'Dashboard', icon: 'pi-home', to: '/dashboard', key: 'dashboard' },
       { label: 'Elections', icon: 'pi-box', to: '/elections', key: 'elections' },
       { label: 'Candidacy', icon: 'pi-file-edit', to: '/candidacy', key: 'candidacy' },
-      { label: 'Positions', icon: 'pi-briefcase', to: '/positions', key: 'positions' },
-      { label: 'Partylists', icon: 'pi-flag', to: '/partylists', key: 'partylists' },
+      { label: 'Positions', icon: 'pi-briefcase', to: '/positions', key: 'positions', adminOnly: true },
+      { label: 'Partylists', icon: 'pi-flag', to: '/partylists', key: 'partylists', adminOnly: true },
     ]
   },
   {
     label: 'Account',
     items: [
       { label: 'Profile', icon: 'pi-user', to: '/profile', key: 'profile' },
-      { label: 'Accounts', icon: 'pi-users', to: '/accounts', key: 'accounts' },
+      { label: 'Accounts', icon: 'pi-users', to: '/accounts', key: 'accounts', adminOnly: true },
       { label: 'Settings', icon: 'pi-cog', to: '/settings', key: 'settings' },
       { label: 'Logout', icon: 'pi-power', key: 'logout' }
     ]
   }
 ])
 
-// Initialize activeItem with dashboard as default
-const activeItem = ref('dashboard')
-
-// Set active item based on current route
-const setActiveFromRoute = () => {
+// Compute active key from route: exact match first, then longest prefix match
+const activeKey = computed(() => {
   const currentPath = route.path
-  
-  // Find the item that matches the current route
-  for (const section of items.value) {
-    const foundItem = section.items.find(item => item.to === currentPath)
-    if (foundItem) {
-      activeItem.value = foundItem.key
-      return
-    }
-  }
-  
-  // If no matching route found, keep the current active item or default to dashboard
-  if (!activeItem.value) {
-    activeItem.value = 'dashboard'
-  }
-}
-
-// Watch for route changes
-watch(() => route.path, () => {
-  setActiveFromRoute()
+  // Flatten items
+  const flatItems = items.value.flatMap(section => section.items).filter(it => !!it.to)
+  // 1) exact match
+  const exact = flatItems.find(it => it.to === currentPath)
+  if (exact) return exact.key
+  // 2) longest prefix match (handles nested/dynamic routes like /elections/123/...)
+  const prefixMatches = flatItems
+    .filter(it => currentPath === it.to || currentPath.startsWith(it.to + '/'))
+    .sort((a, b) => b.to.length - a.to.length)
+  if (prefixMatches.length > 0) return prefixMatches[0].key
+  // 3) default
+  return 'dashboard'
 })
 
-// Initialize active item on component mount
-setActiveFromRoute()
-
-const setActiveItem = (key) => {
-  activeItem.value = key
-}
+// Visible sections depending on role (adminOnly items require authStore.isAdmin)
+const visibleSections = computed(() => {
+  return items.value
+    .map(section => ({
+      ...section,
+      items: section.items
+        .filter(item => item.label !== 'Logout')
+        .filter(item => !item.adminOnly || authStore.isAdmin)
+    }))
+    .filter(section => section.items.length > 0)
+})
 
 // Fetch profile when component is mounted
 onMounted(async () => {

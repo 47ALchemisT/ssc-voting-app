@@ -115,6 +115,32 @@ export const useCandidacyApplicationStore = defineStore('candidacyApplications',
     }
   }
 
+  const cancelApplication = async (id) => {
+    clearError()
+    
+    try {
+      if (!id) {
+        throw new Error('Application ID is required')
+      }
+      
+      const { data, error } = await supabase
+        .from('candidacy_application')
+        .delete()
+        .eq('id', id)
+      
+      if (error) throw error
+      
+      // Remove from local state
+      applications.value = applications.value.filter(app => app.id !== id)
+      
+      return { data, error: null }
+    } catch (err) {
+      error.value = err.message
+      console.error('Error canceling application:', err)
+      return { data: null, error: err.message }
+    }
+  }
+
   // Get application by ID
   const getApplicationById = async (id) => {
     clearError()
@@ -285,6 +311,7 @@ export const useCandidacyApplicationStore = defineStore('candidacyApplications',
     fetchApplications,
     submitApplication,
     getApplicationById,
+    cancelApplication,
     getApplicationsByElection,
     updateApplicationStatus: async (id, status) => {
       clearError()

@@ -23,7 +23,13 @@
             <div class="flex justify-between">
               <h3 class="font-medium text-gray-800">Election Details</h3>
               <div class="flex gap-2">
+                <StartElectionDialog
+                  v-if="election.status === 'upcoming'"
+                  :election="election"
+                  @confirm="startElection"
+                />
                 <VoteEligibilityModal 
+                  v-if="election.status === 'ongoing'"
                   :election-id="election.id"
                   :is-voting-period="isVotingPeriod"
                   @eligible="onEligible"
@@ -32,10 +38,12 @@
                 <Button
                   label="Voters List"
                   size="small"
+                  variant="outlined"
                   icon="pi pi-list"
                   @click="navigateToVotersList"
                 />
                 <Button 
+                  v-if="authStore.isAdmin"
                   label="Candidate Applicants" 
                   icon="pi pi-users" 
                   outlined
@@ -46,18 +54,27 @@
                   label="View Results" 
                   icon="pi pi-chart-bar" 
                   size="small"
-                  severity="secondary"
                   outlined
                   @click="navigateToResults"
                   :disabled="!isElectionEnded"
                   v-tooltip.top="!isElectionEnded ? 'Results will be available after the election ends' : ''"
                 />
+                <EndElectionDialog
+                  v-if="election.status === 'ongoing'"
+                  :election="election"
+                  @confirm="endElection"
+                />
               </div>
             </div>
           </template>
-          <div>
-            <h4 class="text-xs font-medium text-gray-600 uppercase">Title</h4>
-            <p class="text-gray-800 text-md font-medium mt-1">{{ election.title }}</p>
+          <div class="flex justify-between">
+            <div>
+              <h4 class="text-xs font-medium text-gray-600 uppercase">Title</h4>
+              <p class="text-gray-800 text-md font-medium mt-1">{{ election.title }}</p>
+            </div>
+            <div>
+              <Tag class="text-xs capitalize">{{ election.status }}</Tag>
+            </div>
           </div>
           <div class="mt-4">
             <h4 class="text-xs font-medium text-gray-600 uppercase">Description</h4>
@@ -132,10 +149,12 @@ import { useToast } from 'primevue/usetoast';
 import ElectionTabs from '~/components/election/ElectionTabs.vue';
 import ImportVotersDialog from '~/components/election/ImportVotersDialog.vue';
 import VoteEligibilityModal from '~/components/election/VoteEligibilityModal.vue';
+import StartElectionDialog from '~/components/election/StartElectionDialog.vue';
+import EndElectionDialog from '~/components/election/EndElectionDialog.vue';
 
 definePageMeta({
   middleware: 'auth',
-  layout: 'dashboard-layout'
+  layout: 'dashboard-layout',
 })
 
 const route = useRoute()
@@ -162,6 +181,10 @@ const startDate = computed(() => election.value ? new Date(election.value.start_
 const endDate = computed(() => election.value ? new Date(election.value.end_date) : null)
 
 const isVotingPeriod = computed(() => {
+  if (!election.value) return false
+  // Treat 'ongoing' status as open for voting
+  if (election.value.status === 'ongoing') return true
+  // Otherwise, use the scheduled window
   if (!startDate.value || !endDate.value) return false
   return currentDate.value >= startDate.value && currentDate.value <= endDate.value
 })
@@ -276,9 +299,6 @@ const handleVotersImported = (result) => {
     detail: `Successfully imported ${result.count} voters`,
     life: 5000
   });
-  
-  // Refresh any data that might be affected by the import
-  // For example, you might want to refresh the voters list if it's displayed
 };
 
 const formatDate = (dateString) => {
@@ -302,28 +322,6 @@ const onNotEligible = () => {
   console.log('User is not eligible to vote')
 }
 
-const navigateToVote = async () => {
-  if (!isVotingPeriod.value) {
-    return;
-  }
-  
-  try {
-    const { isEligible, error } = await voteStore.isUserEligibleToVote(
-      parseInt(electionId)
-    );
-    
-    if (isEligible) {
-      router.push(`/elections/${electionId}/vote`);
-    } else {
-      // Show error message in alert
-      alert(error || 'You are not eligible to vote in this election');
-    }
-  } catch (err) {
-    console.error('Error checking eligibility:', err);
-    alert('Failed to verify voting eligibility. Please try again.');
-  }
-}
-
 const navigateToVotersList = () => {
   router.push(`/elections/${electionId}/voters-list`)
 }
@@ -335,6 +333,47 @@ const navigateToCandidates = () => {
 const navigateToResults = () => {
   if (isElectionEnded.value) {
     router.push(`/elections/${electionId}/results`)
+  }
+}
+
+// Start election -> set status to 'ongoing'
+const startElection = async () => {
+  try {
+    const { error: err } = await electionStore.updateElectionStatus(electionId, 'ongoing')
+    if (err) throw new Error(err)
+    // Update local state
+    election.value.status = 'ongoing'
+    toast.add({ severity: 'success', summary: 'Election Started', detail: 'Status updated to ongoing.', life: 3000 })
+  } catch (e) {
+    console.error('Failed to start election:', e)
+    toast.add({ severity: 'error', summary: 'Error', detail: e.message || 'Failed to start election', life: 4000 })
+  }
+}
+
+// End election -> set status to 'completed'
+const endElection = async () => {
+  try {
+    // Update both status and is_current in the database
+    const { error: err } = await electionStore.updateElectionStatus(
+      electionId, 
+      'completed',
+      0  // This sets is_current to 0
+    );
+    
+    if (err) throw new Error(err);
+    
+    // Update local state
+    election.value.status = 'completed';
+    election.value.is_current = 0;
+    
+  } catch (e) {
+    console.error('Failed to end election:', e);
+    toast.add({ 
+      severity: 'error', 
+      summary: 'Error', 
+      detail: e.message || 'Failed to end election', 
+      life: 4000 
+    });
   }
 }
 

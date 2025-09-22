@@ -1,4 +1,5 @@
 import {defineStore} from 'pinia';
+import { ref } from 'vue';
 import { useSupabaseClient } from '#imports';
 
 export const usePositionStore = defineStore('positions', () => {
@@ -18,17 +19,18 @@ export const usePositionStore = defineStore('positions', () => {
         }
     } 
 
-    const addPosition = async (title, description, order) => {
+    const addPosition = async (title, description, order, max_candidate) => {
         try{
             const {data,error} = await supabase.from('positions').insert([
                 {
                     title,
                     description,
                     order,
+                    max_candidate,
                     created_at: new Date().toISOString()
                 }
-            ]);
-            positions.value = data;
+            ]).select('*');
+            positions.value = [data[0], ...positions.value];
             return {data,error};
         }catch(e){
             console.log(e);

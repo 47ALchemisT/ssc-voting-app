@@ -8,6 +8,7 @@
         <div>
             <div class="flex gap-2">
                 <Button 
+                    v-if="authStore.isAdmin"
                     label="Import Voters List"
                     size="small"
                     icon="pi pi-upload"
@@ -49,6 +50,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { useAuthStore } from '../../../../stores/auth';
 import { useVotersListStore } from '../../../../stores/votersList';
 import ImportVotersDialog from '~/components/election/ImportVotersDialog.vue';
 
@@ -57,6 +59,7 @@ definePageMeta({
     layout: 'dashboard-layout'
 })
 
+const authStore = useAuthStore();
 const route = useRoute();
 const router = useRouter();
 const votersListStore = useVotersListStore();

@@ -141,7 +141,8 @@ export const useVoteStore = defineStore('votes', () => {
           ),
           user_profile:user_id (
             first_name,
-            last_name
+            last_name,
+            avatar_url
           )
         `)
         .eq('election_id', electionId)
@@ -175,6 +176,7 @@ export const useVoteStore = defineStore('votes', () => {
         positions[candidate.position_id].candidates.push({
           id: candidate.id,
           name: fullName,
+          avatar_url: candidate.user_profile?.avatar_url || null,
           vote_count: voteCounts[candidate.id] || 0
         });
       });
@@ -221,7 +223,25 @@ export const useVoteStore = defineStore('votes', () => {
     try {
       const { data, error: err } = await supabase
         .from('votes')
-        .select('*')
+        .select(`
+          id,
+          election_id,
+          candidate_id,
+          candidate:candidacy_application(
+            id,
+            user:user_profile(
+              id,
+              first_name,
+              last_name
+            ),
+            position:positions(
+              id,
+              title,
+              description,
+              order
+            )
+          )
+        `)
         .eq('voter_id', userId)
         .eq('election_id', electionId);
 

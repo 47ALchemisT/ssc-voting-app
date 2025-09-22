@@ -11,8 +11,8 @@
               sortField="position.order"
               :sortOrder="1"
               :paginator="flattenedCandidates.length > 5" 
-              :rows="5" 
-              :rowsPerPageOptions="[5, 10, 20]" 
+              :rows="15" 
+              :rowsPerPageOptions="[15, 20, 25]" 
               :loading="loading"
               tableStyle="min-width: 50rem"
               class="p-datatable-sm">
@@ -51,7 +51,7 @@
         </template>
       </Column>
       
-      <Column field="platform" header="Platform" style="min-width: 200px">
+      <Column field="platform" header="Platform" style="min-width: 180px">
         <template #body="{ data }">
           <div class="line-clamp-2">
             {{ data.platform || 'No platform information available' }}
@@ -59,14 +59,7 @@
         </template>
       </Column>
       
-      <Column header="Status" style="width: 120px">
-        <template #body="{ data }">
-          <Tag :value="data.status || 'Active'" 
-               :severity="getStatusSeverity(data.status || 'Active')" />
-        </template>
-      </Column>
-      
-      <Column header="Actions" style="width: 100px">
+      <Column header="Actions" style="width: 120px">
         <template #body="{ data }">
           <Button icon="pi pi-user" 
                   class="p-button-sm p-button-text"

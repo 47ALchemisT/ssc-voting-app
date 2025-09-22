@@ -1,5 +1,5 @@
 <template>
-  <header class="flex items-center justify-between bg-white px-4 py-3 lg:px-6">
+  <header class="flex items-center justify-between bg-white/30 backdrop-blur-sm px-4 py-3 lg:px-6 sticky top-0 z-40">
     <!-- Left: Menu Button and Title -->
     <div class="flex items-center">
 
