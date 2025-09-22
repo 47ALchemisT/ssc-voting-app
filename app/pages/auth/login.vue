@@ -56,24 +56,6 @@
       </div>
     </form>
 
-    <!-- Divider -->
-    <div class="flex my-4 items-center">
-      <div class="flex-grow border-t border-gray-300"></div>
-      <span class="px-2 text-gray-400 text-sm">or</span>
-      <div class="flex-grow border-t border-gray-300"></div>
-    </div>
-
-    <!-- Google login -->
-    <Button 
-      type="button"
-      severity="secondary"
-      outlined
-      class="w-full"
-      icon="pi pi-google"
-      label="Sign in with Google"
-      @click="signInWithGoogle"
-    />
-
     <!-- Footer links -->
     <div class="flex justify-center text-sm pt-4">
       <span>

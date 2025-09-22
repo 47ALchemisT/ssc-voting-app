@@ -1,0 +1,5 @@
+<template>
+    <LandingPageHeader />
+    <slot />
+</template>
+    

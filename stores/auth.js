@@ -152,33 +152,16 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  const signUp = async (email, password, profileData = {}) => {
+  const signUp = async (email, password) => {
     try {
-      // Create auth user
-      const { data, error } = await supabase.auth.signUp({
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-          data: {
-            email_verified: false,
-            ...profileData
-          }
-        }
       })
-
-      if (error) throw error
-
-      // Create profile if user was created
-      if (data.user) {
-        await updateProfile({
-          first_name: profileData.first_name || '',
-          last_name: profileData.last_name || '',
-          middle_name: profileData.middle_name || '',
-          school_number: profileData.school_number || ''
-        })
-      }
-
-      return { data, error: null }
+  
+      if (signUpError) throw signUpError
+  
+      return { data: signUpData, error: null }
     } catch (error) {
       console.error('Signup error:', error)
       return { data: null, error }

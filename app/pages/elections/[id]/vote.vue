@@ -292,8 +292,11 @@ const fetchElectionData = async () => {
     election.value = await electionStore.getElectionById(electionId);
     
     // Fetch candidates for this election
-    const candidatesData = await electionStore.getElectionCandidates(electionId);
-    console.log('Raw candidates data:', candidatesData);
+    const response = await electionStore.getElectionCandidates(electionId);
+    console.log('Raw candidates data:', response);
+    
+    // Extract the candidates array from the response
+    const candidatesData = response?.data || [];
     candidates.value = candidatesData;
     
     // Debug log the candidates data

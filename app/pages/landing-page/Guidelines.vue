@@ -1,44 +1,28 @@
 <template>
-  <section class="py-16 md:py-24 bg-gray-50">
+  <section class="py-16 md:py-24">
     <div class="container mx-auto px-6 sm:px-8 md:px-12 lg:px-16 xl:px-24 2xl:px-32">
       <!-- Section Header -->
-      <div class="text-center mb-16">
-        <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+      <div class="mb-6">
+        <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
           Voting Guidelines
         </h2>
-        <div class="w-20 h-1 bg-blue-600 mx-auto mb-6"></div>
-        <p class="max-w-2xl mx-auto text-lg text-gray-600">
+        <p class="text-lg text-gray-600">
           Please review these important guidelines before casting your vote in the SSC elections.
         </p>
       </div>
 
-      <!-- Guidelines Grid -->
-      <div class="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-        <div v-for="(guideline, index) in guidelines" :key="index" 
-             class="bg-white p-8 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
-          <!-- Icon -->
-          <div class="w-16 h-16 bg-blue-100 rounded-xl flex items-center justify-center mb-6">
-            <div class="text-3xl">{{ guideline.icon }}</div>
-          </div>
-          
-          <!-- Content -->
-          <h3 class="text-xl font-bold text-gray-900 mb-4">{{ guideline.title }}</h3>
-          <p class="text-gray-600 leading-relaxed">{{ guideline.description }}</p>
-        </div>
-      </div>
-
       <!-- Important Notice -->
-      <div class="mt-12 max-w-4xl mx-auto">
-        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-6 rounded-lg">
+      <div class="">
+        <div class="bg-blue-50 p-6 rounded-lg">
           <div class="flex items-start">
-            <div class="flex-shrink-0">
-              <svg class="h-6 w-6 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div>
+              <svg class="h-6 w-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
               </svg>
             </div>
             <div class="ml-4">
-              <h4 class="text-lg font-semibold text-yellow-800 mb-2">Important Notice</h4>
-              <p class="text-yellow-700">
+              <h4 class="text-lg font-semibold text-blue-800 mb-2">Important Notice</h4>
+              <p class="text-blue-700">
                 Your vote is confidential and secure. Once submitted, votes cannot be changed or withdrawn. 
                 Make sure to carefully review your selections before finalizing your choices.
               </p>
@@ -46,6 +30,55 @@
           </div>
         </div>
       </div>
+
+      <!-- Guidelines Grid -->
+      <div class="grid md:grid-cols-3 mt-12 gap-8">
+        <div v-for="(guideline, index) in guidelines" :key="index" 
+             class="p-8 rounded-lg bg-gray-50 border border-gray-200">
+            <!-- Icon -->
+            <div class="mb-6">
+              <div 
+                v-if="guideline.icon === 'checklist'" 
+                class="text-blue-600"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="3em" height="3em" viewBox="0 0 16 16">
+                  <path fill="currentColor" d="M3.5 1A2.5 2.5 0 0 0 1 3.5v7A2.5 2.5 0 0 0 3.5 13h4.55c.075-.37.231-.71.45-1h-5A1.5 1.5 0 0 1 2 10.5v-7A1.5 1.5 0 0 1 3.5 2h7A1.5 1.5 0 0 1 12 3.5v2.541a3 3 0 0 1 1 0V3.5A2.5 2.5 0 0 0 10.5 1zm6.354 4.854a.5.5 0 0 0-.708-.708L6 8.293L4.854 7.146a.5.5 0 1 0-.708.708l1.5 1.5a.5.5 0 0 0 .708 0zM14.5 9a2 2 0 1 1-4 0a2 2 0 0 1 4 0m1.5 4.5c0 1.245-1 2.5-3.5 2.5S9 14.75 9 13.5a1.5 1.5 0 0 1 1.5-1.5h4a1.5 1.5 0 0 1 1.5 1.5" />
+                </svg>
+              </div>
+              <div 
+                v-else-if="guideline.icon === 'user-edit'" 
+                class="text-blue-600"
+              >
+              <svg xmlns="http://www.w3.org/2000/svg" width="3em" height="3em" viewBox="0 0 24 24">
+                <path fill="currentColor" d="M5 19V5v4.475V9zm2-6h5.525q.05-.55.25-1.05t.5-.95H7zm0 4h3.925q.425-.5.975-.812t1.15-.513q-.1-.15-.175-.325T12.75 15H7zm0-8h10V7H7zM5 21q-.825 0-1.412-.587T3 19V5q0-.825.588-1.412T5 3h14q.825 0 1.413.588T21 5v6.45q-.35-.65-.85-1.15T19 9.475V5H5v14h5.05q-.025.15-.038.3t-.012.3V21zm12-5q-1.05 0-1.775-.725T14.5 13.5t.725-1.775T17 11t1.775.725t.725 1.775t-.725 1.775T17 16m-5 5v-1.4q0-.6.313-1.112t.887-.738q.9-.375 1.863-.562T17 17t1.938.188t1.862.562q.575.225.888.738T22 19.6V21z" />
+              </svg>
+              </div>
+              <div 
+                v-else-if="guideline.icon === 'verified'" 
+                class="text-blue-600"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="3em" height="3em" viewBox="0 0 24 24">
+                  <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.3">
+                    <path d="M3 5l2 2l4 -4" />
+                    <path d="M3 12l2 2l4 -4" />
+                    <path d="M3 19l2 2l4 -4" />
+                    <g stroke-dasharray="24" stroke-dashoffset="24" stroke-width="1">
+                      <path d="M11.5 5c0 -0.83 0.67 -1.5 1.5 -1.5h6c0.83 0 1.5 0.67 1.5 1.5c0 0.83 -0.67 1.5 -1.5 1.5h-6c-0.83 0 -1.5 -0.67 -1.5 -1.5Z" stroke-dashoffset="0" />
+                      <path d="M11.5 12c0 -0.83 0.67 -1.5 1.5 -1.5h6c0.83 0 1.5 0.67 1.5 1.5c0 0.83 -0.67 1.5 -1.5 1.5h-6c-0.83 0 -1.5 -0.67 -1.5 -1.5Z" stroke-dashoffset="0" />
+                      <path d="M11.5 19c0 -0.83 0.67 -1.5 1.5 -1.5h6c0.83 0 1.5 0.67 1.5 1.5c0 0.83 -0.67 1.5 -1.5 1.5h-6c-0.83 0 -1.5 -0.67 -1.5 -1.5Z" stroke-dashoffset="0" />
+                    </g>
+                  </g>
+                </svg>
+              </div>
+            </div>
+          
+            <!-- Content -->
+            <h3 class="text-xl font-bold text-gray-900 mb-4">{{ guideline.title }}</h3>
+            <p class="text-gray-600 leading-relaxed">{{ guideline.description }}</p>
+        </div>
+      </div>
+
+
     </div>
   </section>
 </template>
@@ -53,17 +86,17 @@
 <script setup>
 const guidelines = [
   {
-    icon: '📋',
+    icon: 'checklist',
     title: 'Student Eligibility',
     description: 'Only registered students with valid MSU-Naawan credentials are eligible to participate in the Supreme Student Council elections. Ensure your student account is active and in good standing.'
   },
   {
-    icon: '🔒',
+    icon: 'user-edit',
     title: 'One Vote Per Position',
     description: 'Each voter is allowed to cast exactly one vote per position. The system will prevent multiple votes for the same position to ensure fair and democratic elections.'
   },
   {
-    icon: '✅',
+    icon: 'verified',
     title: 'Final Verification',
     description: 'Carefully review all your selections before submitting your ballot. Once your vote is submitted, it cannot be modified, changed, or withdrawn for any reason.'
   }
