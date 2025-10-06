@@ -18,6 +18,7 @@
 
     <!-- Other Elections -->
     <div v-if="!loading">
+      <AppBreadCrumbs :home="home" :items="items" />
       <div class="flex justify-between mb-3">
         <div>
           <h3 class="text-lg font-semibold text-gray-800">Elections List</h3>
@@ -135,6 +136,7 @@ import { useRouter } from 'vue-router'
 import CreateElectionModal from "./components/create.vue"
 import { useElectionStore } from '../../../stores/elections'
 import { useAuthStore } from '../../../stores/auth'
+import AppBreadCrumbs from '~/components/AppBreadCrumbs.vue'
 
 definePageMeta({
   middleware: 'auth',
@@ -145,6 +147,16 @@ const authStore = useAuthStore();
 const toast = useToast()
 const router = useRouter()
 const showModal = ref(false)
+
+const home = ref({
+    label: 'Dashboard',
+    icon: 'pi pi-home',
+    route: '/dashboard'
+});
+
+const items = ref([
+    { label: 'Elections', icon: 'pi pi-chart-bar', route: '/elections' }
+]);
 
 // Computed properties for current and past elections
 const currentElection = computed(() => {

@@ -2,33 +2,17 @@
   <section class="py-16 md:py-24">
     <div class="container mx-auto px-6 sm:px-8 md:px-12 lg:px-16 xl:px-24 2xl:px-32">
       <!-- Section Header -->
-      <div class="mb-6">
-        <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
-          Voting Guidelines
+      <div class="mb-6 mx-auto">
+        <h2 class="text-2xl xs:text-3xl md:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">
+          Voting Policy
         </h2>
-        <p class="text-lg text-gray-600">
-          Please review these important guidelines before casting your vote in the SSC elections.
-        </p>
-      </div>
+        <div class="h-1.5 w-44  sm:w-72 bg-blue-600 rounded-full mb-6"></div>
 
-      <!-- Important Notice -->
-      <div class="">
-        <div class="bg-blue-50 p-6 rounded-lg">
-          <div class="flex items-start">
-            <div>
-              <svg class="h-6 w-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-              </svg>
-            </div>
-            <div class="ml-4">
-              <h4 class="text-lg font-semibold text-blue-800 mb-2">Important Notice</h4>
-              <p class="text-blue-700">
-                Your vote is confidential and secure. Once submitted, votes cannot be changed or withdrawn. 
-                Make sure to carefully review your selections before finalizing your choices.
-              </p>
-            </div>
-          </div>
-        </div>
+        <p class="text-lg text-gray-600">
+          Please review these important policy before casting your vote in the SSC elections. <br/>
+          Your vote is confidential and secure. Once submitted, votes cannot be changed or withdrawn. 
+          Make sure to carefully review your selections before finalizing your choices.
+        </p>
       </div>
 
       <!-- Guidelines Grid -->

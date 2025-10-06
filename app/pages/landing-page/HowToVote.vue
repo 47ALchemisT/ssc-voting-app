@@ -1,18 +1,43 @@
 <template>
-  <section class="py-16 md:py-24 bg-white">
-    <div class="container mx-auto px-6 sm:px-8 md:px-12 lg:px-16 xl:px-24 2xl:px-32">
+  <section class="py-12 sm:py-16 md:py-20 lg:py-24 bg-white">
+    <div class="container mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 2xl:px-24">
       <!-- Section Header -->
-      <div class="text-center mb-20">
-        <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+      <div class="text-center mb-12 sm:mb-16 md:mb-20">
+        <h2 class="text-2xl xs:text-3xl md:text-4xl font-bold text-gray-900 mb-3">
           How to Vote
         </h2>
-        <p class="max-w-2xl mx-auto text-lg text-gray-600">
+        <div class="h-1.5 w-40 sm:w-56 md:w-72 bg-blue-600 mx-auto rounded-full mb-4 sm:mb-6"></div>
+        <p class="max-w-2xl mx-auto text-base sm:text-lg text-gray-600 px-2 sm:px-0">
           Follow these simple steps to cast your vote in the Supreme Student Council elections.
         </p>
       </div>
 
-      <!-- Timeline Steps -->
-      <div class="max-w-8xl mx-auto">
+      <!-- Mobile Steps (Cards) -->
+      <div class="lg:hidden space-y-6 max-w-2xl mx-auto">
+        <div v-for="(step, index) in steps" :key="index" class="bg-white border border-gray-200 rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
+          <div class="flex items-start gap-4">
+            <div class="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-full text-white" :style="{ backgroundColor: step.color }">
+              <i :class="step.icon" class="text-lg"></i>
+            </div>
+            <div>
+              <h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <span class="text-blue-600">{{ step.step }}:</span>
+                <span>{{ step.title }}</span>
+              </h3>
+              <p class="mt-2 text-gray-700 text-sm sm:text-base">{{ step.description }}</p>
+              <div v-if="step.tip" class="mt-3 p-3 bg-blue-50 rounded-lg">
+                <p class="text-blue-700 text-xs sm:text-sm flex items-start gap-2">
+                  <i class="pi pi-info-circle mt-0.5 flex-shrink-0"></i>
+                  <span>{{ step.tip }}</span>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Desktop Timeline -->
+      <div class="hidden lg:block max-w-8xl mx-auto">
         <Timeline :value="steps" align="alternate" class="customized-timeline">
           <template #marker="slotProps">
             <span class="flex w-12 h-12 items-center justify-center text-white rounded-full z-10 shadow-md" 
@@ -43,21 +68,21 @@
       </div>
 
       <!-- CTA Section -->
-      <div class="mt-16 text-center p-8 bg-blue-50 rounded-xl border border-blue-200">
-        <h3 class="text-2xl font-bold text-gray-900 mb-4">Ready to Vote?</h3>
-        <p class="text-gray-600 mb-6 max-w-2xl mx-auto">
+      <div class="mt-12 sm:mt-16 text-center p-6 sm:p-8 bg-blue-50 rounded-xl border border-blue-200">
+        <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4">Ready to Vote?</h3>
+        <p class="text-gray-600 mb-4 sm:mb-6 max-w-2xl mx-auto text-sm sm:text-base">
           Your participation shapes the future of our campus. Make your voice heard by casting your vote today.
         </p>
-        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
           <NuxtLink 
             to="/vote" 
-            class="px-8 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-all duration-300 transform hover:scale-105 text-center"
+            class="px-6 sm:px-8 py-2.5 sm:py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-all duration-300 transform hover:scale-105 text-sm sm:text-base text-center"
           >
             Start Voting Now
           </NuxtLink>
           <NuxtLink 
             to="/candidates" 
-            class="px-8 py-3.5 border-2 border-blue-600 hover:bg-blue-50 text-blue-600 font-semibold rounded-lg transition-all duration-300 transform hover:scale-105 text-center"
+            class="px-6 sm:px-8 py-2.5 sm:py-3 border-2 border-blue-600 hover:bg-blue-50 text-blue-600 font-semibold rounded-lg transition-all duration-300 transform hover:scale-105 text-sm sm:text-base text-center"
           >
             View Candidates
           </NuxtLink>

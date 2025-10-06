@@ -13,6 +13,11 @@
                 size="small"
                 @click="goBack" 
             />
+            <ExportResults 
+                :positions="positions" 
+                :election-name="electionName"
+                :disabled="loading || positions.length === 0"
+            />
         </div>
     </div>
 
@@ -44,7 +49,7 @@
           <div class="px-6 py-4 grid grid-cols-4 gap-10">
             <!-- Left: Candidate list -->
             <div class="col-span-2">
-              <div v-for="candidate in sortedCandidates(position.candidates)" :key="candidate.id" class="mb-3 flex bg-gray-50 p-3 gap-3 rounded-lg justify-between">
+              <div v-for="candidate in sortedCandidates(position.candidates)" :key="candidate.id" class=" flex p-3 gap-3 rounded-lg justify-between">
                 <div class="flex items-center gap-3">
                   <div class="h-10 w-10 border-2 border-blue-500 rounded-lg overflow-hidden bg-blue-100 flex items-center justify-center">
                     <img 
@@ -59,6 +64,12 @@
                   </div>
                   <div>
                     <p class="text-gray-800 font-medium">{{ candidate.name }}</p>
+                    <p class="text-xs text-gray-500 mt-0.5">
+                      {{ 
+                        candidate.user_profile?.college?.college_name || 
+                        (candidate.user_profile?.college || 'No college specified')
+                      }}
+                    </p>
                   </div>
                 </div>
                 <div class="flex gap-2">
@@ -90,6 +101,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useVoteStore } from '../../../stores/votes'
+import ExportResults from './ExportResults.vue'
 import Chart from 'primevue/chart'
 
 const props = defineProps({
@@ -106,6 +118,7 @@ const voteStore = useVoteStore()
 const positions = ref([])
 const loading = ref(true)
 const error = ref(null)
+const electionName = ref('Election Results')
 
 const resolvedElectionId = computed(() => props.electionId || route.params.id)
 
@@ -113,8 +126,21 @@ const loadStats = async () => {
   try {
     loading.value = true
     error.value = null
+    // Fetch vote statistics
     const data = await voteStore.getVoteStatistics(resolvedElectionId.value)
     positions.value = Array.isArray(data) ? data : []
+    
+    // Fetch election details to get the name
+    try {
+      const election = await voteStore.getElectionDetails(resolvedElectionId.value)
+      if (election && election.name) {
+        electionName.value = election.name
+      }
+    } catch (e) {
+      console.warn('Could not fetch election details:', e)
+      // Use default name if fetch fails
+      electionName.value = 'Election Results'
+    }
   } catch (e) {
     console.error('Failed to load results:', e)
     error.value = e?.message || 'Failed to load results'

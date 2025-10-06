@@ -18,6 +18,7 @@
     <Dialog 
       v-model:visible="showModal" 
       modal 
+      :draggable="false"
       header="Checking Eligibility" 
       :style="{ width: '450px' }"
       :closable="!loading"
@@ -53,7 +54,7 @@
                 @click="showModal = false" 
               />
               <Button 
-                label="View Confirmation" 
+                label="View my vote" 
                 icon="pi pi-check-circle" 
                 iconPos="left"
                 @click="navigateToConfirmation"

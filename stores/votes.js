@@ -142,6 +142,9 @@ export const useVoteStore = defineStore('votes', () => {
           user_profile:user_id (
             first_name,
             last_name,
+            college: college_id (
+              college_name
+            ),
             avatar_url
           )
         `)
@@ -270,6 +273,29 @@ export const useVoteStore = defineStore('votes', () => {
     return votes.value.filter(vote => vote.candidate_id === candidateId);
   };
 
+  // Fetch all votes from the database
+  const fetchVotes = async () => {
+    loading.value = true;
+    clearError();
+    
+    try {
+      const { data, error: err } = await supabase
+        .from('votes')
+        .select('*');
+
+      if (err) throw err;
+      
+      votes.value = data || [];
+      return data;
+    } catch (err) {
+      console.error('Error fetching votes:', err);
+      error.value = err.message;
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  };
+
   return {
     // State
     votes,
@@ -278,13 +304,16 @@ export const useVoteStore = defineStore('votes', () => {
     
     // Actions
     submitVote,
-    getUserVotes,
+    fetchVotes,
+    fetchAllVotersList,
+    isUserEligibleToVote,
+    getVoteStatistics,
     hasUserVoted,
+    getUserVotes,
     getVotesByElection,
     getVotesByCandidate,
     isUserEligibleToVote,
     fetchAllVotersList,
     getVoteStatistics,
-    clearError
   };
 });

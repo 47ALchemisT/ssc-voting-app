@@ -96,6 +96,31 @@
             />
           </div>
           
+          <!-- College Selection -->
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-1">College</label>
+            <Dropdown
+              v-model="form.college_id"
+              :options="colleges"
+              optionLabel="college_name"
+              optionValue="id"
+              placeholder="Select College"
+              :loading="loadingColleges"
+              class="w-full"
+              :class="{ 'opacity-50': loadingColleges }"
+              :disabled="loadingColleges"
+            >
+              <template #value="slotProps">
+                <div v-if="slotProps.value" class="flex items-center">
+                  <span>{{ getCollegeName(slotProps.value) }}</span>
+                </div>
+                <span v-else>
+                  {{ slotProps.placeholder }}
+                </span>
+              </template>
+            </Dropdown>
+          </div>
+          
           <div class="md:col-span-2">
             <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
             <InputText
@@ -113,17 +138,19 @@
             type="button"
             @click="resetForm"
             size="small"
-            severity="secondary"
+            class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
+            :disabled="authStore.loading"
           >
             Cancel
           </Button>
           <Button
             type="submit"
             size="small"
+            class="px-4 py-2 text-sm font-medium text-white bg-emerald-600 border border-transparent rounded-md hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
+            :loading="authStore.loading"
             :disabled="authStore.loading"
           >
-            <span v-if="authStore.loading">Saving...</span>
-            <span v-else>Save Changes</span>
+            Save Changes
           </Button>
         </div>
       </form>
@@ -152,6 +179,13 @@
               </div>
               
               <div class="md:col-span-2">
+                <p class="text-sm text-gray-500">College</p>
+                <p class="text-gray-900 font-medium">
+                  {{ form.college_id ? getCollegeName(form.college_id) : 'Not set' }}
+                </p>
+              </div>
+              
+              <div class="md:col-span-2">
                 <p class="text-sm text-gray-500">Email</p>
                 <p class="text-gray-900 font-medium">{{ authStore.user?.email || 'Not set' }}</p>
               </div>
@@ -164,8 +198,10 @@
 </template>
 
 <script setup>
-import { useAuthStore } from '../../../stores/auth'
+import { ref, computed, onMounted } from 'vue'
+import Dropdown from 'primevue/dropdown'
 import InputText from 'primevue/inputtext'
+import { useAuthStore } from '../../../stores/auth'
 
 definePageMeta({
     middleware: 'auth',
@@ -176,11 +212,25 @@ const authStore = useAuthStore()
 const toast = useToast()
 
 const editMode = ref(false)
+const colleges = ref([])
+const loadingColleges = ref(false)
+
+// Fetch colleges on component mount
+onMounted(async () => {
+  loadingColleges.value = true
+  const { data, error } = await authStore.fetchColleges()
+  if (!error && data) {
+    colleges.value = data
+  }
+  loadingColleges.value = false
+})
+
 const form = ref({
-  first_name: '',
-  last_name: '',
-  middle_name: '',
-  school_number: ''
+  first_name: authStore.profile?.first_name || '',
+  last_name: authStore.profile?.last_name || '',
+  middle_name: authStore.profile?.middle_name || '',
+  school_number: authStore.profile?.school_number || '',
+  college_id: authStore.profile?.college_id || null
 })
 
 onMounted(() => {
@@ -198,10 +248,16 @@ watch(() => authStore.profile, (newProfile) => {
 
 // Get user initials for profile picture
 const getInitials = computed(() => {
-  const first = form.value.first_name?.[0] || ''
-  const last = form.value.last_name?.[0] || ''
-  return (first + last).toUpperCase() || 'U'
+  const firstName = authStore.profile?.first_name?.[0] || ''
+  const lastName = authStore.profile?.last_name?.[0] || ''
+  return `${firstName}${lastName}`.toUpperCase()
 })
+
+// Get college name by ID
+const getCollegeName = (collegeId) => {
+  const college = colleges.value.find(c => c.id === collegeId)
+  return college ? college.college_name : 'No college selected'
+}
 
 // Avatar upload handling
 const uploadingAvatar = ref(false)
@@ -252,7 +308,8 @@ const saveProfile = async () => {
       first_name: form.value.first_name,
       last_name: form.value.last_name,
       middle_name: form.value.middle_name,
-      school_number: form.value.school_number ? form.value.school_number.toString() : ''
+      school_number: form.value.school_number ? form.value.school_number.toString() : '',
+      college_id: form.value.college_id
     })
 
     if (error) throw error

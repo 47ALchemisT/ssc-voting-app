@@ -146,10 +146,78 @@
                   </div>
                 </div>
                 <div>
-                    <h4 class="text-sm font-medium text-gray-500 mb-2">REQUIREMENTS</h4>
-                    <div class="bg-gray-50 p-4 rounded border border-gray-200 ">
-                        <p class="text-gray-500 text-center">Coming Soon</p>
+                  <h4 class="text-sm font-medium text-gray-500 mb-2">REQUIREMENTS</h4>
+                  <div class="bg-gray-50 p-4 rounded border border-gray-200 space-y-4">
+                    <!-- Grade Slip -->
+                    <div v-if="application.grade_slip" class="border-b border-gray-100 pb-4">
+                      <h5 class="text-sm font-medium text-gray-700 mb-2">Grade Slip</h5>
+                      <div class="flex items-center gap-3 p-3 bg-white rounded border border-gray-200">
+                        <i class="pi pi-file-pdf text-red-500 text-2xl"></i>
+                        <div class="flex-1 min-w-0">
+                          <p class="text-sm font-medium text-gray-900 truncate">Grade Slip</p>
+                        </div>
+                        <a :href="application.grade_slip" target="_blank" class="text-primary-600 hover:text-primary-800">
+                          <i class="pi pi-external-link"></i> View
+                        </a>
+                      </div>
                     </div>
+
+                    <!-- Activity Certificate -->
+                    <div v-if="application.certificate_activity" class="border-b border-gray-100 pb-4">
+                      <h5 class="text-sm font-medium text-gray-700 mb-2">Certificate of Activity</h5>
+                      <div class="flex items-center gap-3 p-3 bg-white rounded border border-gray-200">
+                        <i class="pi pi-file-pdf text-red-500 text-2xl"></i>
+                        <div class="flex-1 min-w-0">
+                          <p class="text-sm font-medium text-gray-900 truncate">Activity Certificate</p>
+                        </div>
+                        <a :href="application.certificate_activity" target="_blank" class="text-primary-600 hover:text-primary-800">
+                          <i class="pi pi-external-link"></i> View
+                        </a>
+                      </div>
+                    </div>
+
+                    <!-- Certificate of Candidacy -->
+                    <div v-if="application.certificate_candidacy" class="border-b border-gray-100 pb-4">
+                      <h5 class="text-sm font-medium text-gray-700 mb-2">Certificate of Candidacy</h5>
+                      <div class="flex items-center gap-3 p-3 bg-white rounded border border-gray-200">
+                        <i class="pi pi-file-pdf text-red-500 text-2xl"></i>
+                        <div class="flex-1 min-w-0">
+                          <p class="text-sm font-medium text-gray-900 truncate">Certificate of Candidacy</p>
+                        </div>
+                        <a :href="application.certificate_candidacy" target="_blank" class="text-primary-600 hover:text-primary-800">
+                          <i class="pi pi-external-link"></i> View
+                        </a>
+                      </div>
+                    </div>
+
+                    <!-- Back Subject Record -->
+                    <div v-if="application.back_sub_record" class="border-b border-gray-100 pb-4">
+                      <h5 class="text-sm font-medium text-gray-700 mb-2">Back Subject Record</h5>
+                      <div class="flex items-center gap-3 p-3 bg-white rounded border border-gray-200">
+                        <i class="pi pi-file-pdf text-red-500 text-2xl"></i>
+                        <div class="flex-1 min-w-0">
+                          <p class="text-sm font-medium text-gray-900 truncate">Back Subject Record</p>
+                        </div>
+                        <a :href="application.back_sub_record" target="_blank" class="text-primary-600 hover:text-primary-800">
+                          <i class="pi pi-external-link"></i> View
+                        </a>
+                      </div>
+                    </div>
+
+                    <!-- Certificate of Registration -->
+                    <div v-if="application.cor" class="pb-2">
+                      <h5 class="text-sm font-medium text-gray-700 mb-2">Certificate of Registration</h5>
+                      <div class="flex items-center gap-3 p-3 bg-white rounded border border-gray-200">
+                        <i class="pi pi-file-pdf text-red-500 text-2xl"></i>
+                        <div class="flex-1 min-w-0">
+                          <p class="text-sm font-medium text-gray-900 truncate">Certificate of Registration</p>
+                        </div>
+                        <a :href="application.cor" target="_blank" class="text-primary-600 hover:text-primary-800">
+                          <i class="pi pi-external-link"></i> View
+                        </a>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

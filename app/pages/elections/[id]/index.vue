@@ -16,6 +16,7 @@
 
     <!-- Election Details -->
     <div v-else-if="election" class="space-y-6">
+      <AppBreadCrumbs :home="home" :items="items" />
       <div class="grid grid-cols-5 gap-4">
         <!-- Election Information -->
         <InfoCard class="col-span-3">
@@ -24,7 +25,7 @@
               <h3 class="font-medium text-gray-800">Election Details</h3>
               <div class="flex gap-2">
                 <StartElectionDialog
-                  v-if="election.status === 'upcoming'"
+                  v-if="election.status === 'upcoming' && authStore.isAdmin"
                   :election="election"
                   @confirm="startElection"
                 />
@@ -35,34 +36,15 @@
                   @eligible="onEligible"
                   @not-eligible="onNotEligible"
                 />
-                <Button
-                  label="Voters List"
-                  size="small"
-                  variant="outlined"
-                  icon="pi pi-list"
-                  @click="navigateToVotersList"
-                />
-                <Button 
-                  v-if="authStore.isAdmin"
-                  label="Candidate Applicants" 
-                  icon="pi pi-users" 
-                  outlined
-                  size="small"
-                  @click="navigateToCandidates"
-                />
-                <Button 
-                  label="View Results" 
-                  icon="pi pi-chart-bar" 
-                  size="small"
-                  outlined
-                  @click="navigateToResults"
-                  :disabled="!isElectionEnded"
-                  v-tooltip.top="!isElectionEnded ? 'Results will be available after the election ends' : ''"
-                />
                 <EndElectionDialog
-                  v-if="election.status === 'ongoing'"
+                  v-if="election.status === 'ongoing' && authStore.isAdmin"
                   :election="election"
                   @confirm="endElection"
+                />
+                <ElectionSettingsDialog 
+                  v-if="election"
+                  :election="election"
+                  @extended="fetchElection"
                 />
               </div>
             </div>
@@ -95,6 +77,31 @@
                 </div>
               </div>
             </div>
+          </div>
+          <div class="mt-8 gap-3 space-x-3">
+            <Button
+              label="Voters List"
+              size="small"
+              variant="outlined"
+              icon="pi pi-list"
+              @click="navigateToVotersList"
+            />
+            <Button 
+              v-if="authStore.isAdmin"
+              label="Candidate Applicants" 
+              icon="pi pi-users" 
+              outlined
+              size="small"
+              @click="navigateToCandidates"
+            />
+            <Button 
+              label="View Results" 
+              icon="pi pi-chart-bar" 
+              size="small"
+              outlined
+              @click="navigateToResults"
+              v-tooltip.top="electionStore.isElectionEnded(election.id) ? 'Results will be available after the election ends' : ''"
+            />
           </div>
         </InfoCard>
         <InfoCard class="h-full col-span-2">
@@ -151,6 +158,8 @@ import ImportVotersDialog from '~/components/election/ImportVotersDialog.vue';
 import VoteEligibilityModal from '~/components/election/VoteEligibilityModal.vue';
 import StartElectionDialog from '~/components/election/StartElectionDialog.vue';
 import EndElectionDialog from '~/components/election/EndElectionDialog.vue';
+import ElectionSettingsDialog from '~/components/election/ElectionSettingsDialog.vue'
+import AppBreadCrumbs from '~/components/AppBreadCrumbs.vue'
 
 definePageMeta({
   middleware: 'auth',
@@ -176,6 +185,17 @@ const candidates = ref([])
 const error = ref(null)
 const refreshingStats = ref(false)
 
+const home = ref({
+    label: 'Dashboard',
+    icon: 'pi pi-home',
+    route: '/dashboard'
+});
+
+const items = ref([
+    { label: 'Elections', icon: 'pi pi-list', route: '/elections' },
+    { label: 'Election Details', icon: 'pi pi-info-circle', route: `/elections/${electionId}` },
+]);
+
 const currentDate = computed(() => new Date())
 const startDate = computed(() => election.value ? new Date(election.value.start_date) : null)
 const endDate = computed(() => election.value ? new Date(election.value.end_date) : null)
@@ -187,10 +207,6 @@ const isVotingPeriod = computed(() => {
   // Otherwise, use the scheduled window
   if (!startDate.value || !endDate.value) return false
   return currentDate.value >= startDate.value && currentDate.value <= endDate.value
-})
-
-const isElectionEnded = computed(() => {
-  return endDate.value && currentDate.value > endDate.value
 })
 
 // Computed properties
@@ -217,6 +233,8 @@ const groupedCandidates = computed(() => {
     return orderA - orderB
   })
 })
+
+console.log('title',election.title);
 
 const flattenedCandidates = computed(() => {
   return groupedCandidates.value.flatMap(group => group.candidates)
@@ -331,7 +349,7 @@ const navigateToCandidates = () => {
 }
 
 const navigateToResults = () => {
-  if (isElectionEnded.value) {
+  if (electionStore.isElectionEnded(election.value)) {
     router.push(`/elections/${electionId}/results`)
   }
 }
@@ -350,21 +368,19 @@ const startElection = async () => {
   }
 }
 
-// End election -> set status to 'completed'
+// End election -> set status to 'completed' without changing is_current
 const endElection = async () => {
   try {
-    // Update both status and is_current in the database
+    // Only update the status, don't change is_current
     const { error: err } = await electionStore.updateElectionStatus(
       electionId, 
-      'completed',
-      0  // This sets is_current to 0
+      'completed'  // Don't pass is_current, so it remains unchanged
     );
     
     if (err) throw new Error(err);
     
     // Update local state
     election.value.status = 'completed';
-    election.value.is_current = 0;
     
   } catch (e) {
     console.error('Failed to end election:', e);

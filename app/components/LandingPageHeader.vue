@@ -25,7 +25,7 @@
           </nav>
   
           <!-- Auth Buttons (Desktop) -->
-          <div class="hidden md:ml-6 md:flex items-center space-x-4">
+          <div class="hidden md:ml-6 md:flex items-center space-x-2">
             <slot name="auth-buttons"></slot>
           </div>
   

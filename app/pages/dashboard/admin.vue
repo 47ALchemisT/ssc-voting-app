@@ -1,163 +1,175 @@
 <template>
-  <div class="p-6">
-    <!-- Header -->
-    <div class="flex justify-between items-center mb-8">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-        <p class="text-gray-600">Welcome back, {{ user?.email }}</p>
-      </div>
-      <button
-        @click="handleSignOut"
-        class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-      >
-        Sign Out
-      </button>
-    </div>
-
-    <!-- Stats Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-      <DashboardCard 
-        title="Total Users" 
-        :value="stats.totalUsers" 
-        icon="👥"
-        color="bg-blue-500"
-      />
-      <DashboardCard 
-        title="Active Elections" 
-        :value="stats.activeElections" 
-        icon="🗳️"
-        color="bg-green-500"
-      />
-      <DashboardCard 
-        title="Pending Approvals" 
-        :value="stats.pendingApprovals" 
-        icon="⏳"
-        color="bg-yellow-500"
-      />
-      <DashboardCard 
-        title="Total Votes" 
-        :value="stats.totalVotes" 
-        icon="✅"
-        color="bg-purple-500"
-      />
-    </div>
-
-    <!-- Quick Actions -->
-    <div class="bg-white rounded-xl shadow-sm p-6 mb-8">
-      <h2 class="text-xl font-semibold mb-4">Quick Actions</h2>
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <button 
-          v-for="action in quickActions" 
-          :key="action.title"
-          @click="action.handler"
-          class="p-4 border rounded-lg hover:bg-gray-50 transition-colors text-center"
-        >
-          <div class="text-2xl mb-2">{{ action.icon }}</div>
-          <span class="text-sm font-medium">{{ action.title }}</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- Recent Activity -->
-    <div class="bg-white rounded-xl shadow-sm p-6">
-      <h2 class="text-xl font-semibold mb-4">Recent Activity</h2>
-      <div class="space-y-4">
-        <div v-for="(activity, index) in recentActivities" :key="index" class="flex items-start pb-4 border-b border-gray-100">
-          <div class="bg-blue-100 p-2 rounded-lg mr-4">
-            <span class="text-blue-600">{{ activity.icon }}</span>
+  <div>
+    <!-- Loading State -->
+    <div v-if="isLoading" class="space-y-8">
+      <!-- Current Election Skeleton -->
+      <div class="bg-white rounded-lg p-6 animate-pulse">
+        <div class="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
+        <div class="h-4 bg-gray-200 rounded w-1/2 mb-6"></div>
+        <div class="grid grid-cols-2 gap-8">
+          <div>
+            <div class="h 6 bg-gray-200 rounded w-1/4 mb-4"></div>
+            <div class="h-10 bg-gray-200 rounded w-3/4 mb-2"></div>
+            <div class="h-4 bg-gray-200 rounded w-1/2"></div>
           </div>
-          <div class="flex-1">
-            <p class="font-medium text-gray-900">{{ activity.title }}</p>
-            <p class="text-sm text-gray-500">{{ activity.description }}</p>
-            <span class="text-xs text-gray-400">{{ activity.time }}</span>
+          <div class="grid grid-cols-2 gap-4">
+            <div v-for="i in 4" :key="i" class="h-24 bg-gray-100 rounded-lg p-4">
+              <div class="h-4 bg-gray-200 rounded w-3/4 mb-3"></div>
+              <div class="h-8 bg-gray-200 rounded w-1/2"></div>
+            </div>
           </div>
         </div>
       </div>
+
+      <!-- Statistics Skeleton -->
+      <div class="grid grid-cols-3 gap-6">
+        <div class="bg-white rounded-lg p-6 h-80 animate-pulse">
+          <div class="h-6 bg-gray-200 rounded w-1/2 mb-6"></div>
+          <div class="flex justify-center mb-8">
+            <div class="w-48 h-48 rounded-full bg-gray-200"></div>
+          </div>
+          <div class="space-y-3">
+            <div v-for="i in 3" :key="i" class="h-12 bg-gray-100 rounded-md"></div>
+          </div>
+        </div>
+        <div class="col-span-2 bg-white rounded-lg p-6 h-80 animate-pulse">
+          <div class="flex justify-between items-center mb-6">
+            <div class="h-6 bg-gray-200 rounded w-1/4"></div>
+            <div class="flex">
+              <div class="h-10 bg-gray-200 rounded-l-lg w-20"></div>
+              <div class="h-10 bg-gray-100 rounded-r-lg w-20"></div>
+            </div>
+          </div>
+          <div class="h-64 bg-gray-100 rounded"></div>
+        </div>
+      </div>
     </div>
+
+    <!-- Loaded State -->
+    <template v-else>
+      <!-- Current Election -->
+      <CurrentElection 
+        :current-election="currentElection"
+        :candidates="candidates"
+        :pending-candidates="pendingCandidates"
+        :voters="voters"
+        :positions="positions"
+      />
+
+      <!-- Statistics -->
+      <div class="mt-8 mb-6 grid grid-cols-3 gap-6">
+        <VotersDistribution 
+          :voted-count="votes.length" 
+          :total-voters="voters.length" 
+        />
+        <VotesOverTime />
+      </div>
+    </template>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useAuth } from '../composables/useAuth'
-import { useAuthStore } from '../stores/auth'
-import { useSupabaseUser } from '#imports'
+import { ref, onMounted } from 'vue';
+import { useElectionStore } from '~~/stores/elections';
+import { useCandidacyApplicationStore } from '~~/stores/candidacy_application';
+import { useVotersListStore } from '~~/stores/votersList';
+import { useVoteStore } from '~~/stores/votes';
+import { usePositionStore } from '~~/stores/positions'; 
+import CurrentElection from './components/CurrentElection.vue';
+import VotersDistribution from './components/VotersDistribution.vue';
+import VotesOverTime from './components/VotesOverTime.vue';
 
-const { signOut } = useAuth()
-const authStore = useAuthStore()
-const user = useSupabaseUser()
+// Initialize stores
+const electionStore = useElectionStore();
+const candidacyApplicationStore = useCandidacyApplicationStore();
+const votersListStore = useVotersListStore();
+const positionStore = usePositionStore();
+const voteStore = useVoteStore();
 
-const stats = ref({
-  totalUsers: 0,
-  activeElections: 0,
-  pendingApprovals: 0,
-  totalVotes: 0
-})
+// State
+const currentElection = ref(null);
+const candidates = ref([]);
+const pendingCandidates = ref([]);
+const voters = ref([]);
+const positions = ref([]);
+const votes = ref([]);
+const isLoading = ref(true);
 
-const recentActivities = ref([
-  {
-    icon: '👤',
-    title: 'New User Registration',
-    description: 'John Doe registered as a new user',
-    time: '10 minutes ago'
-  },
-  {
-    icon: '📝',
-    title: 'Election Created',
-    description: 'New SSC Election 2024 has been created',
-    time: '2 hours ago'
-  },
-  {
-    icon: '✅',
-    title: 'Vote Cast',
-    description: 'A new vote has been cast in the SSC Election',
-    time: '5 hours ago'
+// Fetch data
+const fetchData = async () => {
+  try {
+    isLoading.value = true;
+    const { data: electionData, error: electionError } = await electionStore.getCurrentElections();
+    if (electionError) throw electionError;
+    
+    if (electionData && electionData.length > 0) {
+      currentElection.value = electionData[0];
+      
+      // Fetch all data in parallel
+      await Promise.all([
+        fetchCandidates(),
+        fetchPendingCandidates(),
+        fetchVoters(),
+        fetchPositions(),
+        fetchVotes()
+      ]);
+    }
+  } catch (err) {
+    console.error('Error fetching data:', err);
+  } finally {
+    isLoading.value = false;
   }
-])
+};
 
-const quickActions = [
-  {
-    title: 'Create Election',
-    icon: '➕',
-    handler: () => navigateTo('/admin/elections/create')
-  },
-  {
-    title: 'Manage Users',
-    icon: '👥',
-    handler: () => navigateTo('/admin/users')
-  },
-  {
-    title: 'View Reports',
-    icon: '📊',
-    handler: () => navigateTo('/admin/reports')
-  },
-  {
-    title: 'System Settings',
-    icon: '⚙️',
-    handler: () => navigateTo('/admin/settings')
+const fetchCandidates = async () => {
+  if (!currentElection.value?.id) return;
+  const { data, error } = await candidacyApplicationStore.getApplicationsByElection(currentElection.value.id, 1);
+  if (error) throw error;
+  candidates.value = data || [];
+};
+
+const fetchPendingCandidates = async () => {
+  if (!currentElection.value?.id) return;
+  const { data, error } = await candidacyApplicationStore.getApplicationsByElection(currentElection.value.id, 0);
+  if (error) throw error;
+  pendingCandidates.value = data || [];
+};
+
+const fetchVoters = async () => {
+  if (!currentElection.value?.id) return;
+  const { data, error } = await votersListStore.getVotersByElection(currentElection.value.id);
+  if (error) throw error;
+  voters.value = data || [];
+};
+
+const fetchPositions = async () => {
+  if (!currentElection.value?.id) return;
+  const { data, error } = await positionStore.getPositions();
+  if (error) throw error;
+  positions.value = data || [];
+};
+
+const fetchVotes = async () => {
+  if (!currentElection.value?.id) return;
+  try {
+    // First, fetch all votes from the database
+    await voteStore.fetchVotes();
+    // Then filter them by election ID
+    const electionVotes = voteStore.getVotesByElection(currentElection.value.id);
+    votes.value = Array.isArray(electionVotes) ? electionVotes : [];
+    console.log('Fetched votes:', votes.value);
+  } catch (err) {
+    console.error('Error in fetchVotes:', err);
+    votes.value = [];
   }
-]
+};
 
-const handleSignOut = async () => {
-  await signOut()
-  navigateTo('/auth/login')
-}
+// Fetch data when component mounts
+onMounted(() => {
+  fetchData();
+});
 
-// Fetch initial data
-onMounted(async () => {
-  // In a real app, you would fetch these from your API
-  stats.value = {
-    totalUsers: 245,
-    activeElections: 3,
-    pendingApprovals: 12,
-    totalVotes: 1245
-  }
-})
 
-definePageMeta({
-  middleware: ['auth', 'admin'],
-  layout: 'dashboard-layout'
-})
 </script>
 
 <style scoped>

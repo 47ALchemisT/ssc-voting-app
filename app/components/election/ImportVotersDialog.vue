@@ -5,6 +5,7 @@
     :style="{ width: '600px' }"
     header="Import Voters List"
     :modal="true"
+    :draggable="false"
     :closable="!importing"
     :closeOnEscape="!importing"
   >
@@ -47,7 +48,10 @@
           </div>
           
           <div v-if="previewData.length > 0" class="mt-4">
-            <h4 class="text-sm text-left font-medium mb-2">Preview (first 5 rows)</h4>
+            <h4 class="text-sm text-left font-medium mb-2">Preview (first 5 rows) - Total: {{ totalRows }} rows</h4>
+          <p class="text-xs text-gray-500 mb-2">
+            Required fields: Email. All other fields are optional.
+          </p>
             <div class="overflow-auto max-h-60 border border-gray-200 rounded">
               <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
@@ -67,8 +71,9 @@
                       v-for="(cell, cellIndex) in row" 
                       :key="cellIndex"
                       class="px-4 py-2 text-sm text-gray-900"
+                      :class="{ 'text-gray-400 italic': !cell }"
                     >
-                      {{ cell }}
+                      {{ cell || '-' }}
                     </td>
                   </tr>
                 </tbody>
@@ -89,7 +94,7 @@
 
       <div v-if="importSuccess" class="p-3 bg-green-50 text-green-700 rounded">
         <i class="pi pi-check-circle mr-2"></i>
-        Successfully imported {{ importedCount }} voters!
+        {{ successMessage || `Successfully imported ${importedCount} voters!` }}
       </div>
     </div>
 
@@ -138,10 +143,11 @@ const file = ref(null);
 const previewData = ref([]);
 const headers = ref([]);
 const totalRows = ref(0);
-const importing = ref(false);
+const successMessage = ref('');
 const error = ref('');
-const importSuccess = ref(false);
 const importedCount = ref(0);
+const importSuccess = ref(false);
+const importing = ref(false);
 
 const closeDialog = () => {
   file.value = null;
@@ -196,34 +202,120 @@ const parseFile = (file) => {
         const data = new Uint8Array(e.target.result);
         const workbook = XLSX.read(data, { type: 'array' });
         const firstSheetName = workbook.SheetNames[0];
+        
+        // Define expected columns with their display names and validation
+        // Include common variations of column names for better matching
+        const expectedColumns = [
+          { key: 'email', aliases: ['email', 'e-mail', 'email address', 'e-mail address'], required: true },
+          { key: 'fullname', aliases: ['fullname', 'full name', 'name', 'student name'], required: false },
+          { key: 'college', aliases: ['college', 'program', 'course', 'college/program'], required: false },
+          { key: 'school_id', aliases: ['school_id', 'school id', 'student id', 'student number', 'id number'], required: false }
+        ];
+        
+        // Create a map of all possible header names to their standard keys
+        const headerToKeyMap = {};
+        expectedColumns.forEach(col => {
+          col.aliases.forEach(alias => {
+            headerToKeyMap[alias.toLowerCase()] = col.key;
+          });
+        });
         const worksheet = workbook.Sheets[firstSheetName];
         
         // Convert to JSON
         const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
         
         if (jsonData.length < 2) {
-          throw new Error('The file is empty or has no data');
+          throw new Error('The file is empty or has no data rows');
         }
         
-        // Extract headers (first row)
-        headers.value = jsonData[0].map(h => h?.toString().trim() || '');
+        // Get headers from first row and normalize them (trim and make lowercase)
+        const headers = jsonData[0].map(h => h ? h.toString().trim() : '');
         
-        // Extract data (skip header)
-        const rows = jsonData.slice(1).filter(row => row.some(cell => cell !== undefined && cell !== null && cell !== ''));
-        
-        // Convert to array of objects with headers as keys
-        const formattedData = rows.map(row => {
-          const obj = {};
-          headers.value.forEach((header, index) => {
-            obj[header] = row[index]?.toString().trim() || '';
-          });
-          return obj;
+        // Map headers to our expected format using the headerToKeyMap
+        const headerMap = {};
+        headers.forEach((header, index) => {
+          if (!header) return;
+          
+          const headerLower = header.toLowerCase();
+          const mappedKey = headerToKeyMap[headerLower];
+          
+          if (mappedKey) {
+            headerMap[mappedKey] = index; // Store the column index for this header
+          }
         });
         
-        totalRows.value = formattedData.length;
-        previewData.value = formattedData.slice(0, 5); // Show first 5 rows as preview
+        // Check if required columns exist
+        expectedColumns.forEach(col => {
+          if (col.required && !Object.keys(headerMap).includes(col.key)) {
+            throw new Error(`Required column "${col.aliases[0]}" not found in the file`);
+          }
+        });
         
-        resolve(formattedData);
+        // Log the header mapping for debugging
+        console.log('Header mapping:', headerMap);
+        
+        // Process data rows
+        const dataRows = [];
+        const emailSet = new Set(); // To track duplicate emails in the file
+        
+        for (let i = 1; i < jsonData.length; i++) {
+          const row = jsonData[i];
+          if (row.length === 0) continue; // Skip empty rows
+          
+          // Helper function to get cell value safely
+          const getCellValue = (key) => {
+            const index = headerMap[key];
+            if (index === undefined || index >= row.length) return '';
+            const value = row[index];
+            return (value !== undefined && value !== null) ? value.toString().trim() : '';
+          };
+          
+          // Only process rows with email
+          const email = getCellValue('email');
+          if (email) {
+            // Check for duplicate emails in the file
+            if (emailSet.has(email.toLowerCase())) {
+              throw new Error(`Duplicate email found: ${email}. Please ensure all emails are unique.`);
+            }
+            emailSet.add(email.toLowerCase());
+            
+            // Map the data to our expected format
+            const mappedData = {
+              email: email,
+              fullname: headerMap.fullname !== undefined ? getCellValue('fullname') : '',
+              college: headerMap.college !== undefined ? getCellValue('college') : '',
+              school_id: headerMap.school_id !== undefined ? getCellValue('school_id') : ''
+            };
+            
+            // Log the first few rows for debugging
+            if (dataRows.length < 3) {
+              console.log('Processed row:', mappedData);
+            }
+            
+            dataRows.push(mappedData);
+          }
+        }
+        
+        // Set headers for preview
+        headers.value = [];
+        if (headerMap.email) headers.value.push('Email');
+        if (headerMap.fullname) headers.value.push('Full Name');
+        if (headerMap.college) headers.value.push('College');
+        if (headerMap.school_id) headers.value.push('School ID');
+        
+        // Prepare preview data
+        const previewDataRows = dataRows.slice(0, 5).map(row => {
+          const previewRow = [row.email];
+          if (headerMap.fullname) previewRow.push(row.fullname || '');
+          if (headerMap.college) previewRow.push(row.college || '');
+          if (headerMap.school_id) previewRow.push(row.school_id || '');
+          return previewRow;
+        });
+        
+        totalRows.value = dataRows.length;
+        previewData.value = previewDataRows;
+        
+        resolve(dataRows);
       } catch (err) {
         reject(err);
       }
@@ -248,35 +340,46 @@ const importVoters = async () => {
     // Get the full data from the file
     const data = await parseFile(file.value);
     
-    // Transform data to match our expected format
-    const voters = data.map(row => {
-      // Try to find email in different possible column names
-      const email = row.email || row.Email || row.EMAIL || row['Email Address'] || '';
-      return { email };
-    }).filter(voter => voter.email);
+    // Use the already parsed data which includes all fields
+    const parsedData = data.filter(voter => voter.email);
     
-    if (voters.length === 0) {
+    if (parsedData.length === 0) {
+      throw new Error('No valid email addresses found in the file');
+    }
+    
+    // Log the first row for debugging
+    console.log('First row of data being sent to store:', parsedData[0]);
+    
+    if (parsedData.length === 0) {
       throw new Error('No valid email addresses found in the file');
     }
     
     // Call the store to import voters
-    const { data: result, error: importError } = await votersListStore.importVoters(
-      props.electionId,
-      voters
-    );
-    
-    if (importError) throw new Error(importError);
-    
-    importedCount.value = result?.length || 0;
+    const { data: result, error: importError, imported, skipped } = await votersListStore.importVoters(props.electionId, parsedData);
+      
+    if (importError) {
+      error.value = importError;
+      return;
+    }
+
+    // Success
     importSuccess.value = true;
+    importedCount.value = imported || 0;
     
-    // Emit event to parent component
-    emit('imported', { count: importedCount.value });
+    // Show appropriate message based on import results
+    if (skipped > 0) {
+      if (imported > 0) {
+        successMessage.value = `Successfully imported ${imported} new voters. ${skipped} duplicate emails were skipped.`;
+      } else {
+        successMessage.value = `All ${skipped} voters already exist in the system. No new voters were imported.`;
+      }
+    } else {
+      successMessage.value = `Successfully imported ${imported} voters!`;
+    }
     
-    // Auto-close after success (optional)
-    setTimeout(() => {
-      closeDialog();
-    }, 2000);
+    emit('imported', result || []);
+    file.value = null;
+    previewData.value = [];
     
   } catch (err) {
     console.error('Error importing voters:', err);

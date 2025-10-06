@@ -4,7 +4,7 @@
     <div class="space-y-2 mb-4">
       <h1 class="text-2xl font-bold text-gray-800">Create account</h1>
       <p class="text-gray-500 text-sm">
-        Enter your email to create an account
+        Enter your <span class="font-medium">university email</span> to create an account
       </p>
     </div>
 

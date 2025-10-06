@@ -33,7 +33,7 @@
       />
 
       <!-- Page Content -->
-      <section class="flex-1 p-4 lg:p-6">
+      <section class="flex-1 px-4 lg:px-6">
         <slot />
       </section>
     </main>

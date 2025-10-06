@@ -6,6 +6,7 @@
         <p class="text-gray-500 text-sm">View and manage your candidacy applications</p>
       </div>
       <Button
+        v-if="applications.length === 0"
         label="Apply for Candidacy"
         icon="pi pi-file-edit"
         size="small"

@@ -4,25 +4,17 @@
     <div class="flex items-center">
 
       <div>
-      <h1 class="text-lg font-semibold text-gray-900">
-        <template v-if="isDashboard">
-          <h1 class="capitalize">
-            Welcome back, {{ userDisplayName }}
-          </h1>
-        </template>
-        <template v-else>
-          {{ currentPageTitle }}
-        </template>
-      </h1>
-      <p v-if="isDashboard" class="text-xs text-gray-500">
-        Here's what's happening with your account today
-      </p>
-      <nav v-else class="flex items-center text-xs text-gray-500">
-        <NuxtLink to="/dashboard" class="hover:text-blue-600">Dashboard</NuxtLink>
-        <span class="mx-2">/</span>
-        <span class="text-gray-700 font-medium">{{ currentPageTitle }}</span>
-      </nav>
-    </div>
+        <h1 class="text-lg font-semibold text-gray-900">
+          <template v-if="isDashboard">
+            <h1 class="capitalize">
+              Welcome back, {{ userDisplayName }}
+            </h1>
+          </template>
+          <template v-else>
+            {{ currentPageTitle }}
+          </template>
+        </h1>
+      </div>
     </div>
 
     <!-- Right: Actions -->

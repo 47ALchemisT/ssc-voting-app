@@ -89,8 +89,15 @@
                     {{ authStore.profile?.first_name || authStore.user?.email?.split('@')[0] || 'User' }}
                     {{ authStore.profile?.last_name ? ' ' + authStore.profile.last_name.charAt(0) + '.' : '' }}
                   </span>
-                  <span class="text-xs bg-blue-100 rounded-full font-medium text-blue-700 px-2 py-1 ml-2 whitespace-nowrap">
-                    {{ authStore.isAdmin ? 'Admin' : 'User' }}
+                  <span 
+                    class="text-xs rounded-full font-medium px-2 py-1 ml-2 whitespace-nowrap"
+                    :class="{
+                      'bg-blue-100 text-blue-700': !authStore.isAdmin && !authStore.isCandidate,
+                      'bg-red-100 text-red-700': authStore.isAdmin,
+                      'bg-green-100 text-green-700': authStore.isCandidate
+                    }"
+                  >
+                    {{ authStore.isAdmin ? 'Admin' : authStore.isCandidate ? 'Candidate' : 'User' }}
                   </span>
                 </div>
                 <div class="text-xs truncate mt-1 text-gray-500">
@@ -156,6 +163,7 @@ const items = ref([
       { label: 'Candidacy', icon: 'pi-file-edit', to: '/candidacy', key: 'candidacy' },
       { label: 'Positions', icon: 'pi-briefcase', to: '/positions', key: 'positions', adminOnly: true },
       { label: 'Partylists', icon: 'pi-flag', to: '/partylists', key: 'partylists', adminOnly: true },
+      { label: 'Colleges', icon: 'pi-building', to: '/colleges', key: 'colleges', adminOnly: true },
     ]
   },
   {

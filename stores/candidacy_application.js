@@ -1,11 +1,13 @@
 // stores/candidacy_application.js
 import { defineStore } from 'pinia'
 import { useSupabaseClient, useSupabaseUser } from '#imports'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { useAuthStore } from './auth'
 
 export const useCandidacyApplicationStore = defineStore('candidacyApplications', () => {
   const supabase = useSupabaseClient()
   const user = useSupabaseUser()
+  const authStore = useAuthStore()
 
   const applications = ref([])
   const loading = ref(false)
@@ -40,78 +42,116 @@ export const useCandidacyApplicationStore = defineStore('candidacyApplications',
     }
   }
 
-  // Submit a new candidacy application
-  const submitApplication = async (electionId, positionId, platform) => {
+  // Upload a file to storage
+  const uploadFile = async (file, prefix) => {
+    if (!file) return null
+    
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${prefix}-${user.value.id}-${Date.now()}.${fileExt}`
+    const filePath = `assets/${fileName}`
+
+    const { error: uploadError } = await supabase.storage
+      .from('assets')
+      .upload(filePath, file)
+
+    if (uploadError) throw uploadError
+
+    // Get public URL
+    const { data } = supabase.storage
+      .from('assets')
+      .getPublicUrl(filePath)
+
+    return data.publicUrl
+  }
+
+  // Submit a new candidacy application with file uploads
+  const submitApplication = async (formData) => {
     clearError()
+    loading.value = true
     
     try {
-      // Validate input
-      if (!electionId || !positionId) {
-        throw new Error('Election ID and position are required')
+      // Validate required fields
+      if (!formData.electionId || !formData.positionId) {
+        throw new Error('Election and position are required')
       }
-      
-      // Check if user is authenticated
+
       if (!user.value?.id) {
         throw new Error('User must be logged in to submit an application')
       }
-      
-      // Verify the position exists
-      const { data: position, error: positionError } = await supabase
-        .from('positions')
-        .select('id')
-        .eq('id', positionId)
-        .single()
-      
-      if (positionError || !position) {
-        throw new Error('Invalid position selected')
-      }
-      
-      // Get the user's profile to get the numeric ID
+
+      // Get user profile to verify existence and get the numeric ID
       const { data: userProfile, error: profileError } = await supabase
         .from('user_profile')
         .select('id')
         .eq('user_id', user.value.id)
         .single()
-      
-      if (profileError) throw profileError
-      if (!userProfile) throw new Error('User profile not found')
-      
-      // Check if user has already applied for this position in the election
-      const { data: existingApplication, error: checkError } = await hasUserApplied(electionId, positionId)
+
+      if (profileError || !userProfile) {
+        throw new Error('User profile not found. Please complete your profile first.')
+      }
+
+      // Check for existing application for this position in the same election
+      const { data: existingApplication, error: checkError } = await hasUserApplied(
+        formData.electionId,
+        formData.positionId
+      )
+
       if (checkError) throw checkError
       if (existingApplication) {
         throw new Error('You have already applied for this position in the selected election')
       }
+
+      // Upload all files in parallel
+      const [
+        gradeSlipUrl, 
+        activityCertUrl, 
+        candidacyCertUrl, 
+        backSubRecordUrl, 
+        corUrl
+      ] = await Promise.all([
+        uploadFile(formData.gradeSlip, 'gradeslip'),
+        uploadFile(formData.activityCertificate, 'activity-cert'),
+        uploadFile(formData.candidacyCertificate, 'candidacy-cert'),
+        uploadFile(formData.backSubjectRecord, 'back-subject'),
+        uploadFile(formData.cor, 'cor')
+      ])
       
-      // Create the application
+      // Create the application with file URLs
       const { data, error: createError } = await supabase
         .from('candidacy_application')
         .insert([
           {
             user_id: userProfile.id,
-            election_id: electionId,
-            position_id: positionId, // Store the position ID reference
-            platform: platform || null,
-            status: STATUS.PENDING
+            election_id: formData.electionId,
+            position_id: formData.positionId,
+            platform: formData.platform || null,
+            status: STATUS.PENDING,
+            applied_at: new Date().toISOString(),
+            grade_slip: gradeSlipUrl,
+            certificate_activity: activityCertUrl,
+            certificate_candidacy: candidacyCertUrl,
+            back_sub_record: backSubRecordUrl,
+            cor: corUrl
           }
         ])
         .select(`
           *,
           position:position_id(*)
         `)
+        .single()
       
       if (createError) throw createError
       
-      // Add to local state with position data
-      if (data?.[0]) {
-        applications.value = [data[0], ...applications.value]
-      }
-      
-      return { data: data?.[0], error: null }
+      // Add to local state
+      applications.value = [data, ...applications.value]
+      return { data, error: null }
+
     } catch (err) {
-      error.value = err.message
       console.error('Error submitting application:', err)
+      error.value = err.message
       return { data: null, error: err.message }
+    } finally {
+      loading.value = false
     }
   }
 
@@ -176,6 +216,8 @@ export const useCandidacyApplicationStore = defineStore('candidacyApplications',
   const STATUS = {
     PENDING: 0,
     APPROVED: 1,
+    REJECTED: 2,
+    APPROVED: 1,
     REJECTED: 2
   }
 
@@ -231,7 +273,17 @@ export const useCandidacyApplicationStore = defineStore('candidacyApplications',
       if (profileError) throw profileError
       if (!userProfile) return { data: [], error: 'User profile not found' }
       
-      // Then get the applications using the numeric ID
+      // First, get the current active election
+      const { data: activeElection, error: electionError } = await supabase
+        .from('elections')
+        .select('*')
+        .eq('is_current', 1)
+        .single()
+      
+      if (electionError) throw electionError
+      if (!activeElection) return { data: [], error: 'No active election found' }
+      
+      // Then get the applications for the current election
       const { data, error: err } = await supabase
         .from('candidacy_application')
         .select(`
@@ -240,6 +292,7 @@ export const useCandidacyApplicationStore = defineStore('candidacyApplications',
           user:user_profile(*)
         `)
         .eq('user_id', userProfile.id)
+        .eq('election_id', activeElection.id)
         .order('applied_at', { ascending: false })
 
       if (err) throw err
@@ -322,16 +375,38 @@ export const useCandidacyApplicationStore = defineStore('candidacyApplications',
           ? STATUS[status.toUpperCase()] 
           : status;
             
-        const { data, error: err } = await supabase
+        // First, get the application to get the user_id
+        const { data: application, error: appError } = await supabase
+          .from('candidacy_application')
+          .select('*, user_id')
+          .eq('id', id)
+          .single()
+          
+        if (appError) throw appError
+        
+        // Update the application status
+        const { data, error: updateError } = await supabase
           .from('candidacy_application')
           .update({ 
             status: statusValue,
-            // Removed updated_at as it's not in the schema
           })
           .eq('id', id)
           .select()
 
-        if (err) throw err
+        if (updateError) throw updateError
+        
+        // If the application is being approved, update the user's is_admin to 2 (candidate)
+        if (statusValue === STATUS.APPROVED && application.user_id) {
+          const { error: profileError } = await supabase
+            .from('user_profile')
+            .update({ is_admin: 2 })
+            .eq('id', application.user_id);
+          
+          if (profileError) {
+            console.error('Error updating user profile role:', profileError);
+            // Don't fail the whole operation if role update fails
+          }
+        }
         
         // Update local state if needed
         const index = applications.value.findIndex(app => app.id === id);

@@ -12,6 +12,7 @@
     <Dialog
       v-model:visible="visible"
       modal
+      :draggable="false"
       header="Start Election"
       :style="{ width: '28rem' }"
     >

@@ -142,6 +142,33 @@ export const useElectionStore = defineStore('elections', () => {
     }
   };
 
+  // Extend the end date of an election
+  const extendElectionEndDate = async (electionId, newEndDate) => {
+    clearError();
+    try {
+      const { data, error: err } = await supabase
+        .from('elections')
+        .update({ end_date: newEndDate })
+        .eq('id', electionId)
+        .select()
+        .single();
+
+      if (err) throw err;
+      
+      // Update the local elections array if needed
+      const index = elections.value.findIndex(e => e.id === electionId);
+      if (index !== -1) {
+        elections.value[index] = { ...elections.value[index], end_date: newEndDate };
+      }
+      
+      return { data, error: null };
+    } catch (err) {
+      error.value = err.message;
+      console.error('Error extending election end date:', err);
+      return { data: null, error: err.message };
+    }
+  };
+
   // Get candidates for an election
   const getElectionCandidates = async (electionId) => {
     try {
@@ -237,25 +264,32 @@ export const useElectionStore = defineStore('elections', () => {
     clearError();
     
     try {
-      const { data, error: err } = await supabase
+      // First, update all current elections to not be current
+      const { error: updateError } = await supabase
+        .from('elections')
+        .update({ is_current: 0 })
+        .eq('is_current', 1);
+      
+      if (updateError) throw updateError;
+      
+      // Then, insert the new election as current
+      const { data, error: insertError } = await supabase
         .from('elections')
         .insert([{
           title: electionData.title,
           description: electionData.description,
           start_date: electionData.startDate,
           end_date: electionData.endDate,
-          status: 'upcoming', // You might want to add status management
+          status: 'upcoming',
           is_current: 1
         }])
         .select()
         .single();
 
-      if (err) throw err;
+      if (insertError) throw insertError;
       
-      // Add the new election to the local state
-      if (data) {
-        elections.value = [data, ...elections.value];
-      }
+      // Refresh the elections list to get the updated data
+      await fetchElections();
       
       return { data, error: null };
     } catch (err) {
@@ -273,6 +307,11 @@ export const useElectionStore = defineStore('elections', () => {
     return election.status === 'ongoing' || election.status === 'upcoming';
   };
 
+  const isElectionEnded = (election) => {
+    if (!election || !election.status) return false;
+    return election.status === 'completed';
+  };
+
   return {
     // State
     elections,
@@ -288,6 +327,8 @@ export const useElectionStore = defineStore('elections', () => {
     createElection,
     updateElectionStatus,
     isElectionActive,
-    clearError
+    isElectionEnded,
+    clearError,
+    extendElectionEndDate
   };
 });

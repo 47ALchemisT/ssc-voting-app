@@ -37,8 +37,17 @@
     <div v-else class="space-y-8">
       <div v-for="position in positions" :key="position.id" class="bg-white rounded-lg border border-gray-200 overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
-          <h3 class="text-lg font-medium text-gray-900">{{ position.name }}</h3>
-          <p class="text-sm text-gray-500">Select one candidate</p>
+          <div class="flex justify-between items-center">
+            <div>
+              <h3 class="text-lg font-medium text-gray-900">{{ position.name }}</h3>
+              <p class="text-sm text-gray-500">
+                Select {{ position.max_candidate > 1 ? `up to ${position.max_candidate} candidates` : 'one candidate' }}
+                <span v-if="getSelectedCandidatesCount(position.id) > 0" class="text-blue-600 font-medium">
+                  ({{ getSelectedCandidatesCount(position.id) }}/{{ position.max_candidate }} selected)
+                </span>
+              </p>
+            </div>
+          </div>
         </div>
         
         <div class="divide-y divide-gray-200">
@@ -46,8 +55,8 @@
             v-for="candidate in getCandidatesByPosition(position.id)" 
             :key="candidate.id"
             class="px-6 py-4 hover:bg-gray-50 transition-colors cursor-pointer"
-            :class="{ 'bg-blue-50': selectedVotes[position.id] === candidate.id }"
-            @click="selectCandidate(position.id, candidate.id)"
+            :class="{ 'bg-blue-50': isCandidateSelected(position.id, candidate.id) }"
+            @click="toggleCandidate(position, candidate.id)"
           >
             <div class="flex items-center">
               <div class="flex-shrink-0 h-36 w-36 rounded-lg bg-blue-100 flex items-center justify-center">
@@ -72,8 +81,11 @@
                 <!--checkbox-->
                 <div class="ml-4">
                   <div class="h-5 w-5 rounded-full border-2 flex items-center justify-center"
-                       :class="{ 'bg-blue-500 border-blue-500': selectedVotes[position.id] === candidate.id, 'border-gray-300': selectedVotes[position.id] !== candidate.id }">
-                    <i v-if="selectedVotes[position.id] === candidate.id" class="pi pi-check text-white text-xs"></i>
+                       :class="{ 
+                         'bg-blue-500 border-blue-500': isCandidateSelected(position.id, candidate.id), 
+                         'border-gray-300': !isCandidateSelected(position.id, candidate.id) 
+                       }">
+                    <i v-if="isCandidateSelected(position.id, candidate.id)" class="pi pi-check text-white text-xs"></i>
                   </div>
                 </div>
               </div>
@@ -111,17 +123,20 @@
           
           <div class="mt-4 flex justify-between items-center">
             <div>
-              <p class="text-sm text-gray-600">
+                  <p class="text-sm text-gray-500">
                 {{ positions.length - votedPositionsCount }} more positions to vote
               </p>
               <p class="text-xs text-gray-500">
                 Please vote for all positions before submitting
               </p>
+              <p v-if="hasExceededMaxCandidates" class="text-xs text-red-500 mt-1">
+                You've selected too many candidates for one or more positions. Please review your selections.
+              </p>
             </div>
             <Button 
               label="Submit Votes"
               icon="pi pi-check-circle"
-              :disabled="Object.keys(selectedVotes).length !== positions.length || isSubmitting"
+              :disabled="Object.keys(selectedVotes).length !== positions.length || isSubmitting || hasExceededMaxCandidates"
               :loading="isSubmitting"
               @click="submitVotes"
             />
@@ -149,6 +164,7 @@ const electionId = route.params.id;
 const election = ref(null);
 const positions = ref([]);
 const candidates = ref([]);
+// Store votes as { positionId: [candidateId1, candidateId2, ...] }
 const selectedVotes = ref({});
 const loading = ref(true);
 const isSubmitting = ref(false);
@@ -209,31 +225,73 @@ const getCandidatesByPosition = (positionId) => {
 const togglePlatform = (id) => {
   expandedPlatforms.value[id] = !expandedPlatforms.value[id];
 };
-const selectCandidate = (positionCode, candidateId) => {
-  // If clicking the same candidate, deselect
-  if (selectedVotes.value[positionCode] === candidateId) {
-    selectedVotes.value = {
-      ...selectedVotes.value,
-      [positionCode]: null
-    };
-  } else {
-    // Select the new candidate for this position
-    selectedVotes.value = {
-      ...selectedVotes.value,
-      [positionCode]: candidateId
-    };
+// Check if a candidate is selected for a position
+const isCandidateSelected = (positionId, candidateId) => {
+  return selectedVotes.value[positionId]?.includes(candidateId) || false;
+};
+
+// Get the number of selected candidates for a position
+const getSelectedCandidatesCount = (positionId) => {
+  return (selectedVotes.value[positionId] || []).length;
+};
+
+// Toggle candidate selection for a position
+const toggleCandidate = (position, candidateId) => {
+  const positionId = position.id;
+  const maxCandidates = position.max_candidate || 1;
+  
+  // Initialize the position in selectedVotes if it doesn't exist
+  if (!selectedVotes.value[positionId]) {
+    selectedVotes.value[positionId] = [];
   }
+  
+  const currentSelections = [...(selectedVotes.value[positionId] || [])];
+  const candidateIndex = currentSelections.indexOf(candidateId);
+  
+  if (candidateIndex > -1) {
+    // Deselect the candidate if already selected
+    currentSelections.splice(candidateIndex, 1);
+  } else {
+    // If we've reached max candidates, don't allow more selections
+    if (currentSelections.length >= maxCandidates) {
+      // Optional: Show a message to the user
+      error.value = `You can only select up to ${maxCandidates} candidates for ${position.name}`;
+      setTimeout(() => { error.value = null; }, 3000);
+      return;
+    }
+    // Add the new candidate
+    currentSelections.push(candidateId);
+  }
+  
+  // Update the selected votes
+  selectedVotes.value = {
+    ...selectedVotes.value,
+    [positionId]: currentSelections
+  };
+  
   console.log('Selected votes:', selectedVotes.value);
 };
 
 // Check if all positions have been voted for
 const allPositionsVoted = computed(() => {
-  return positions.value.every(position => selectedVotes.value[position.id]);
+  return positions.value.every(position => {
+    const votes = selectedVotes.value[position.id] || [];
+    return votes.length > 0; // At least one candidate selected for each position
+  });
 });
 
 // Get the number of positions with votes
+const hasExceededMaxCandidates = computed(() => {
+  return positions.value.some(position => {
+    const selectedCount = (selectedVotes.value[position.id] || []).length;
+    return selectedCount > (position.max_candidate || 1);
+  });
+});
+
 const votedPositionsCount = computed(() => {
-  return Object.values(selectedVotes.value).filter(vote => vote !== null).length;
+  return positions.value.filter(position => {
+    return (selectedVotes.value[position.id] || []).length > 0;
+  }).length;
 });
 
 const submitVotes = async () => {
@@ -245,17 +303,19 @@ const submitVotes = async () => {
   try {
     isSubmitting.value = true;
     
-    // Create vote objects for each position
-    const votes = Object.entries(selectedVotes.value).map(([positionCode, candidateId]) => {
-      const candidate = candidates.value.find(c => c.id === candidateId);
-      return {
-        election_id: parseInt(electionId),
-        position: positionCode,
-        candidate_id: candidateId,
-        voter_id: authStore.profile?.id,
-        created_at: new Date().toISOString()
-      };
-    });
+    // Create vote objects for each position and candidate
+    const votes = [];
+    for (const [positionId, candidateIds] of Object.entries(selectedVotes.value)) {
+      for (const candidateId of candidateIds) {
+        votes.push({
+          election_id: parseInt(electionId),
+          position: positionId,
+          candidate_id: candidateId,
+          voter_id: authStore.profile?.id,
+          created_at: new Date().toISOString()
+        });
+      }
+    }
 
     console.log('Submitting votes:', votes);
     
