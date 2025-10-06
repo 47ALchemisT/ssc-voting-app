@@ -42,7 +42,7 @@
                   @confirm="endElection"
                 />
                 <ElectionSettingsDialog 
-                  v-if="election"
+                  v-if="election.status === 'upcoming' || election.status === 'ongoing' && authStore.isAdmin"
                   :election="election"
                   @extended="fetchElection"
                 />
