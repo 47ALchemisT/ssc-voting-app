@@ -2,8 +2,22 @@
   <div>
     <div>
       <AppBreadCrumbs :home="home" :items="items" />
-      <AdminDashboard v-if="isAdmin" />
-      <UserDashboard v-else />
+      
+      <!-- Single loading state in parent -->
+      <div v-if="isLoading" class="p-6">
+        <div class="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
+        <div class="grid grid-cols-1 gap-6">
+          <div class="bg-white rounded-lg p-6 animate-pulse">
+            <div class="h-64 bg-gray-100 rounded"></div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Only render dashboard after loading is complete -->
+      <template v-else>
+        <UserDashboard v-if="!isAdmin" />
+        <AdminDashboard v-else />
+      </template>
       
       <!-- Profile Completion Modal -->
       <ProfileCompletionModal
@@ -63,6 +77,7 @@ const showProfileModal = computed({
 // Check user role and load appropriate dashboard
 const checkUserRole = async () => {
   try {
+    isLoading.value = true
     await authStore.fetchProfile()
     isAdmin.value = authStore.isAdmin
   } catch (error) {
