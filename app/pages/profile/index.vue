@@ -1,5 +1,6 @@
 <template>
   <div>
+    <AppBreadCrumbs :home="home" :items="items" />
     <div class="flex justify-between items-center mb-6">
         <div>
             <h1 class="text-xl font-medium text-gray-800">Profile Information</h1>
@@ -202,11 +203,22 @@ import { ref, computed, onMounted } from 'vue'
 import Dropdown from 'primevue/dropdown'
 import InputText from 'primevue/inputtext'
 import { useAuthStore } from '../../../stores/auth'
+import AppBreadCrumbs from '~/components/AppBreadCrumbs.vue'
 
 definePageMeta({
     middleware: 'auth',
     layout: 'dashboard-layout'
 })
+
+const home = ref({
+    label: 'Dashboard',
+    icon: 'pi pi-home',
+    route: '/dashboard'
+});
+
+const items = ref([
+    { label: 'Profile', icon: 'pi pi-user' },
+]);
 
 const authStore = useAuthStore()
 const toast = useToast()

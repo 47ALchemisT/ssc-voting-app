@@ -1,5 +1,6 @@
 <template>
     <div>
+      <AppBreadCrumbs :home="home" :items="items" />
       <div class="flex justify-between items-center mb-6">
         <div>
           <h1 class="text-xl font-semibold text-gray-800">Positions Management</h1>
@@ -176,6 +177,7 @@
   import InputNumber from 'primevue/inputnumber';
   import DataTable from 'primevue/datatable';
   import Column from 'primevue/column';
+  import AppBreadCrumbs from '~/components/AppBreadCrumbs.vue';
 
   definePageMeta({
     layout: 'dashboard-layout',
@@ -187,6 +189,15 @@
   const error = ref(null);
   const positionDialog = ref(false);
   const submitted = ref(false);
+  const home = ref({
+      label: 'Dashboard',
+      icon: 'pi pi-home',
+      route: '/dashboard'
+  });
+
+  const items = ref([
+      { label: 'Positions', icon: 'pi pi-list'},
+  ]);
   const newPosition = ref({
     title: '',
     description: '',

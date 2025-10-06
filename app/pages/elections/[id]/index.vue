@@ -16,7 +16,7 @@
 
     <!-- Election Details -->
     <div v-else-if="election" class="space-y-6">
-      <AppBreadCrumbs :home="home" :items="items" />
+      <AppBreadCrumbs :home="home" :items="items"/>
       <div class="grid grid-cols-5 gap-4">
         <!-- Election Information -->
         <InfoCard class="col-span-3">

@@ -1,5 +1,6 @@
 <template>
   <div>
+    <AppBreadCrumbs :home="home" :items="items" />
     <div class="mb-8">
       <h1 class="text-xl font-medium text-gray-800">Candidacy Application</h1>
       <p class="text-gray-500 text-sm">Submit your application to run for a position in the upcoming election</p>
@@ -357,11 +358,23 @@ import { usePositionStore } from '../../../stores/positions'
 import { useElectionStore } from '../../../stores/elections'
 import { useCandidacyApplicationStore } from '../../../stores/candidacy_application'
 import { useToast } from 'primevue/usetoast'
+import AppBreadCrumbs from '~/components/AppBreadCrumbs.vue'
 
 definePageMeta({
   middleware: 'auth',
   layout: 'dashboard-layout'
 })
+
+const home = ref({
+    label: 'Dashboard',
+    icon: 'pi pi-home',
+    route: '/dashboard'
+});
+
+const items = ref([
+    { label: 'Candidacy', icon: 'pi pi-list', route: '/candidacy' },
+    { label: 'Candidacy Application', icon: 'pi pi-file-edit'},
+]);
 
 const route = useRoute()
 const authStore = useAuthStore()

@@ -162,7 +162,7 @@ const items = ref([
       { label: 'Elections', icon: 'pi-box', to: '/elections', key: 'elections' },
       { label: 'Candidacy', icon: 'pi-file-edit', to: '/candidacy', key: 'candidacy' },
       { label: 'Positions', icon: 'pi-briefcase', to: '/positions', key: 'positions', adminOnly: true },
-      { label: 'Partylists', icon: 'pi-flag', to: '/partylists', key: 'partylists', adminOnly: true },
+      //{ label: 'Partylists', icon: 'pi-flag', to: '/partylists', key: 'partylists', adminOnly: true },
       { label: 'Colleges', icon: 'pi-building', to: '/colleges', key: 'colleges', adminOnly: true },
     ]
   },
@@ -171,7 +171,7 @@ const items = ref([
     items: [
       { label: 'Profile', icon: 'pi-user', to: '/profile', key: 'profile' },
       { label: 'Accounts', icon: 'pi-users', to: '/accounts', key: 'accounts', adminOnly: true },
-      { label: 'Settings', icon: 'pi-cog', to: '/settings', key: 'settings' },
+      //{ label: 'Settings', icon: 'pi-cog', to: '/settings', key: 'settings' },
       { label: 'Logout', icon: 'pi-power', key: 'logout' }
     ]
   }

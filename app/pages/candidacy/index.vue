@@ -1,5 +1,6 @@
 <template>
   <div>
+    <AppBreadCrumbs :home="home" :items="items" />
     <div class="flex justify-between items-center mb-6">
       <div>
         <h1 class="text-xl font-semibold text-gray-800">My Candidacy</h1>
@@ -145,12 +146,23 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useCandidacyApplicationStore } from '../../../stores/candidacy_application'
+import AppBreadCrumbs from '~/components/AppBreadCrumbs.vue'
 
 const candidacyStore = useCandidacyApplicationStore()
 
 const applications = ref([])
 const loading = ref(true)
 const error = ref(null)
+
+const home = ref({
+    label: 'Dashboard',
+    icon: 'pi pi-home',
+    route: '/dashboard'
+});
+
+const items = ref([
+    { label: 'Candidacy', icon: 'pi pi-list' },
+]);
 
 // Helper function to get status text and class
 const getStatusInfo = (statusCode) => {

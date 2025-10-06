@@ -1,5 +1,6 @@
 <template>
   <div class="">
+    <AppBreadCrumbs :home="home" :items="items" />
     <div class="flex justify-between items-center mb-6">
       <div>
           <h1 class="text-xl font-medium text-gray-800">Profile Information</h1>
@@ -70,15 +71,6 @@
           </template>
         </Column>
         
-        <Column header="Status" :sortable="true" sortField="is_active">
-          <template #body="{ data }">
-            <Tag 
-              :value="data.is_active ? 'Active' : 'Inactive'" 
-              :severity="data.is_active ? 'success' : 'danger'"
-            />
-          </template>
-        </Column>
-        
         <Column header="Actions" style="width: 120px">
           <template #body="{ data }">
             <div class="flex space-x-2">
@@ -135,11 +127,22 @@
 import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '../../../stores/auth';
 import { useToast } from 'primevue/usetoast';
+import AppBreadCrumbs from '~/components/AppBreadCrumbs.vue';
 
 definePageMeta({
     layout: 'dashboard-layout',
     middleware: 'auth'
 })
+
+const home = ref({
+    label: 'Dashboard',
+    icon: 'pi pi-home',
+    route: '/dashboard'
+});
+
+const items = ref([
+    { label: 'Accounts', icon: 'pi pi-user' },
+]);
 
 const authStore = useAuthStore();
 const toast = useToast();

@@ -251,7 +251,7 @@ export const useAuthStore = defineStore('auth', () => {
       // Get user profiles with auth data
       const { data: profiles, error } = await supabase
         .from('user_profile')
-        .select('*')
+        .select('*, colleges(college_name)')
         .order('created_at', { ascending: false })
       
       if (error) throw error
@@ -259,8 +259,9 @@ export const useAuthStore = defineStore('auth', () => {
       // Transform the data
       const formattedUsers = profiles.map(profile => ({
         ...profile,
-        email: profile.auth_users?.email || 'No email',
-        last_sign_in: profile.auth_users?.last_sign_in_at,
+        college_name: profile.colleges?.college_name || 'No college',
+        email: profile.email || 'No email', // This will be populated from the user object
+        last_sign_in: profile.last_sign_in_at,
         created_at: profile.created_at
       }))
       
