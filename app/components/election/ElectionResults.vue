@@ -6,14 +6,8 @@
           <p class="text-sm text-gray-500">Data is based on the votes casted by the students.</p>
         </div>
         <div class="flex gap-2">
-            <Button 
-                label="Back to Election" 
-                icon="pi pi-arrow-left" 
-                class="p-button-outlined" 
-                size="small"
-                @click="goBack" 
-            />
             <ExportResults 
+                v-if = "authStore.isAdmin"
                 :positions="positions" 
                 :election-name="electionName"
                 :disabled="loading || positions.length === 0"
@@ -102,7 +96,10 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useVoteStore } from '../../../stores/votes'
 import ExportResults from './ExportResults.vue'
+import { useAuthStore } from '../../../stores/auth'
 import Chart from 'primevue/chart'
+
+const authStore = useAuthStore()
 
 const props = defineProps({
   electionId: {

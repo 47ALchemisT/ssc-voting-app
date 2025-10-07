@@ -235,7 +235,8 @@ export const useElectionStore = defineStore('elections', () => {
             id: position.id,
             title: position.title || 'Unknown Position',
             order: position.order || 0,
-            description: position.description || ''
+            description: position.description || '',
+            max_candidate: position.max_candidate || 1  // Include max_candidate with default of 1
           },
           // Convenience alias for UIs
           avatar_url: user.avatar_url || null,

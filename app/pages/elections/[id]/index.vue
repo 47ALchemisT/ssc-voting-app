@@ -136,6 +136,7 @@
         :loading="loading"
         :election="election"
         @view-candidate="viewCandidate"
+        class="mb-6"
       />
     </div>
   </div>
@@ -193,7 +194,7 @@ const home = ref({
 
 const items = ref([
     { label: 'Elections', icon: 'pi pi-list', route: '/elections' },
-    { label: 'Election Details', icon: 'pi pi-info-circle', route: `/elections/${electionId}` },
+    { label: 'Election Details', icon: 'pi pi-info-circle'},
 ]);
 
 const currentDate = computed(() => new Date())

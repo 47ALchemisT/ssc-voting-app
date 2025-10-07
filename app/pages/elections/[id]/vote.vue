@@ -1,5 +1,6 @@
 <template>
   <div class="max-w-4xl mx-auto p-6">
+    <Toast />
     <!-- Header -->
     <div class="text-center mb-8">
       <h1 class="text-2xl font-bold text-gray-900">{{ election?.title || 'Election' }}</h1>
@@ -22,16 +23,6 @@
     </div>
 
     <!-- Error State -->
-    <div v-else-if="error" class="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
-      <div class="flex">
-        <div class="flex-shrink-0">
-          <i class="pi pi-exclamation-circle text-red-500 text-xl"></i>
-        </div>
-        <div class="ml-3">
-          <p class="text-sm text-red-700">{{ error }}</p>
-        </div>
-      </div>
-    </div>
 
     <!-- Voting Form -->
     <div v-else class="space-y-8">
@@ -41,9 +32,15 @@
             <div>
               <h3 class="text-lg font-medium text-gray-900">{{ position.name }}</h3>
               <p class="text-sm text-gray-500">
-                Select {{ position.max_candidate > 1 ? `up to ${position.max_candidate} candidates` : 'one candidate' }}
-                <span v-if="getSelectedCandidatesCount(position.id) > 0" class="text-blue-600 font-medium">
+                {{ position.max_candidate > 1 ? `Select up to ${position.max_candidate} candidates` : 'Select one candidate' }}
+                <span :class="{
+                  'text-blue-600 font-medium': getSelectedCandidatesCount(position.id) > 0 && getSelectedCandidatesCount(position.id) <= position.max_candidate,
+                  'text-red-600 font-medium': getSelectedCandidatesCount(position.id) > position.max_candidate
+                }">
                   ({{ getSelectedCandidatesCount(position.id) }}/{{ position.max_candidate }} selected)
+                </span>
+                <span v-if="getSelectedCandidatesCount(position.id) > position.max_candidate" class="text-red-500 text-xs block mt-1">
+                  Please select at most {{ position.max_candidate }} {{ position.max_candidate === 1 ? 'candidate' : 'candidates' }}
                 </span>
               </p>
             </div>
@@ -108,15 +105,16 @@
             <div class="w-full bg-gray-200 rounded-full h-2.5">
               <div 
                 class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" 
-                :style="{ width: `${(votedPositionsCount / positions.length) * 100}%` }"
+                :style="{ width: `${(validVotedPositionsCount / positions.length) * 100}%` }"
+                :class="{ 'bg-red-500': hasExceededMaxCandidates }"
               ></div>
             </div>
             <div class="flex justify-between items-center">
               <p class="text-sm text-gray-600">
-                {{ votedPositionsCount }} of {{ positions.length }} positions voted
+                {{ validVotedPositionsCount }} of {{ positions.length }} positions voted
               </p>
-              <span class="text-sm font-medium text-gray-900">
-                {{ Math.round((votedPositionsCount / positions.length) * 100) }}% Complete
+              <span class="text-sm font-medium" :class="{ 'text-red-600': hasExceededMaxCandidates, 'text-gray-900': !hasExceededMaxCandidates }">
+                {{ Math.round((validVotedPositionsCount / positions.length) * 100) }}% Complete
               </span>
             </div>
           </div>
@@ -128,15 +126,15 @@
               </p>
               <p class="text-xs text-gray-500">
                 Please vote for all positions before submitting
-              </p>
-              <p v-if="hasExceededMaxCandidates" class="text-xs text-red-500 mt-1">
-                You've selected too many candidates for one or more positions. Please review your selections.
+                <span v-if="hasExceededMaxCandidates" class="text-red-500 block mt-1">
+                  You've selected too many candidates for one or more positions.
+                </span>
               </p>
             </div>
             <Button 
               label="Submit Votes"
               icon="pi pi-check-circle"
-              :disabled="Object.keys(selectedVotes).length !== positions.length || isSubmitting || hasExceededMaxCandidates"
+              :disabled="!allPositionsVoted || isSubmitting"
               :loading="isSubmitting"
               @click="submitVotes"
             />
@@ -153,9 +151,12 @@ import { useRoute, useRouter } from 'vue-router';
 import { useVoteStore } from '../../../../stores/votes';
 import { useAuthStore } from '../../../../stores/auth';
 import { useElectionStore } from '../../../../stores/elections';
+import { useToast } from 'primevue/usetoast';
+import Toast from 'primevue/toast';
 
 const route = useRoute();
 const router = useRouter();
+const toast = useToast();
 const voteStore = useVoteStore();
 const authStore = useAuthStore();
 const electionStore = useElectionStore();
@@ -254,9 +255,12 @@ const toggleCandidate = (position, candidateId) => {
   } else {
     // If we've reached max candidates, don't allow more selections
     if (currentSelections.length >= maxCandidates) {
-      // Optional: Show a message to the user
-      error.value = `You can only select up to ${maxCandidates} candidates for ${position.name}`;
-      setTimeout(() => { error.value = null; }, 3000);
+      toast.add({
+        severity: 'warn',
+        summary: 'Selection Limit Reached',
+        detail: `You can only select up to ${maxCandidates} ${maxCandidates === 1 ? 'candidate' : 'candidates'} for ${position.name}`,
+        life: 3000
+      });
       return;
     }
     // Add the new candidate
@@ -270,17 +274,23 @@ const toggleCandidate = (position, candidateId) => {
   };
   
   console.log('Selected votes:', selectedVotes.value);
+  
+  // Clear any error if the selection is now valid
+  if (error.value && error.value.includes('only select up to') && currentSelections.length <= maxCandidates) {
+    error.value = null;
+  }
 };
 
-// Check if all positions have been voted for
+// Check if all positions have valid votes (at least one and not exceeding max_candidate)
 const allPositionsVoted = computed(() => {
   return positions.value.every(position => {
     const votes = selectedVotes.value[position.id] || [];
-    return votes.length > 0; // At least one candidate selected for each position
+    const maxCandidates = position.max_candidate || 1;
+    return votes.length > 0 && votes.length <= maxCandidates;
   });
 });
 
-// Get the number of positions with votes
+// Check if any position has exceeded max candidates
 const hasExceededMaxCandidates = computed(() => {
   return positions.value.some(position => {
     const selectedCount = (selectedVotes.value[position.id] || []).length;
@@ -288,12 +298,45 @@ const hasExceededMaxCandidates = computed(() => {
   });
 });
 
+// Get the number of positions with valid votes (not exceeding max_candidate)
+const validVotedPositionsCount = computed(() => {
+  return positions.value.filter(position => {
+    const votes = selectedVotes.value[position.id] || [];
+    const maxCandidates = position.max_candidate || 1;
+    return votes.length > 0 && votes.length <= maxCandidates;
+  }).length;
+});
+
+// Get the total number of positions with any votes (for backward compatibility)
 const votedPositionsCount = computed(() => {
   return positions.value.filter(position => {
     return (selectedVotes.value[position.id] || []).length > 0;
   }).length;
 });
 
+// Show toast notification when user exceeds max candidates
+watch(
+  () => hasExceededMaxCandidates.value,
+  (newValue, oldValue) => {
+    if (newValue) {
+      // Find the first position that has too many candidates selected
+      const invalidPosition = positions.value.find(position => {
+        const selectedCount = (selectedVotes.value[position.id] || []).length;
+        return selectedCount > (position.max_candidate || 1);
+      });
+
+      if (invalidPosition) {
+        const maxCandidates = invalidPosition.max_candidate || 1;
+        toast.add({
+          severity: 'warn',
+          summary: 'Selection Limit Reached',
+          detail: `You can only select up to ${maxCandidates} ${maxCandidates === 1 ? 'candidate' : 'candidates'} for ${invalidPosition.name}`,
+          life: 3000
+        });
+      }
+    }
+  }
+);
 const submitVotes = async () => {
   if (Object.keys(selectedVotes.value).length !== positions.value.length) {
     error.value = 'Please select a candidate for each position';
@@ -365,37 +408,40 @@ const fetchElectionData = async () => {
     // First, collect all unique position objects from candidates
     const positionMap = new Map();
     
-    candidatesData.forEach(candidate => {
-      if (candidate.position && candidate.position.id) {
-        const pos = candidate.position;
-        if (!positionMap.has(pos.id)) {
+    // First, try to get positions directly
+    try {
+      const { data: positionsData } = await electionStore.getElectionPositions(electionId);
+      if (positionsData && positionsData.length > 0) {
+        positionsData.forEach(pos => {
           positionMap.set(pos.id, {
             id: pos.id,
             name: pos.title || `Position ${pos.id}`,
             order: pos.order || 0,
-            ...pos  // Include all position properties
+            max_candidate: pos.max_candidate || 1, // Ensure max_candidate is set
+            ...pos
           });
-        }
+        });
       }
-    });
-    
-    // If no positions found in candidate objects, try to get them directly
-    if (positionMap.size === 0) {
-      try {
-        const { data: positionsData } = await electionStore.getElectionPositions(electionId);
-        if (positionsData && positionsData.length > 0) {
-          positionsData.forEach(pos => {
+    } catch (err) {
+      console.error('Error fetching positions:', err);
+    }
+
+    // If no positions found, try to get them from candidates
+    if (positionMap.size === 0 && candidatesData) {
+      candidatesData.forEach(candidate => {
+        if (candidate.position && candidate.position.id) {
+          const pos = candidate.position;
+          if (!positionMap.has(pos.id)) {
             positionMap.set(pos.id, {
               id: pos.id,
               name: pos.title || `Position ${pos.id}`,
               order: pos.order || 0,
+              max_candidate: pos.max_candidate || 1, // Ensure max_candidate is set
               ...pos
             });
-          });
+          }
         }
-      } catch (err) {
-        console.error('Error fetching positions:', err);
-      }
+      });
     }
     
     // Convert to array and sort by order

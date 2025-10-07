@@ -1,6 +1,7 @@
 <template>
   <div>
     <div class="mb-4 space-y-4">
+        <AppBreadCrumbs :home="home" :items="items" />
         <div class="flex justify-between items-center">
             <div>
                 <h2 class="text-lg font-medium text-gray-800">Voters List</h2>
@@ -81,6 +82,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '../../../../stores/auth';
 import { useVotersListStore } from '../../../../stores/votersList';
 import ImportVotersDialog from '~/components/election/ImportVotersDialog.vue';
+import AppBreadCrumbs from '~/components/AppBreadCrumbs.vue';
 
 definePageMeta({
     middleware: 'auth',
@@ -97,6 +99,18 @@ const voters = ref([]);
 const loading = ref(false);
 const showImportDialog = ref(false);
 const searchTerm = ref('');
+
+const home = ref({
+  label: 'Dashboard',
+  icon: 'pi pi-home',
+  route: '/dashboard'
+})
+
+const items = ref([
+  { label: 'Elections', icon: 'pi pi-list', route: '/elections' },
+  { label: 'Election Details', icon: 'pi pi-info-circle', route: `/elections/${electionId}` },
+  { label: 'Voters List', icon: 'pi pi-user' }
+])
 
 const filteredVoters = computed(() => {
   if (!searchTerm.value) return voters.value;

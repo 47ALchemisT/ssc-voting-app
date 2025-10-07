@@ -202,6 +202,7 @@ const visibleSections = computed(() => {
       items: section.items
         .filter(item => item.label !== 'Logout')
         .filter(item => !item.adminOnly || authStore.isAdmin)
+        .filter(item => item.key !== 'candidacy' || !authStore.isAdmin) // Hide Candidacy for admin
     }))
     .filter(section => section.items.length > 0)
 })

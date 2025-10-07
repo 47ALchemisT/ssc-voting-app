@@ -45,7 +45,7 @@
       </div>
 
       <!-- Elections list -->
-      <div class="space-y-6">
+      <div class="space-y-6 mb-6">
         <!-- Current Election Section -->
         <div v-if="currentElection" class="space-y-3">
           <h4 class="text-sm font-medium text-gray-700">Current Election</h4>
@@ -155,7 +155,7 @@ const home = ref({
 });
 
 const items = ref([
-    { label: 'Elections', icon: 'pi pi-chart-bar', route: '/elections' }
+    { label: 'Elections', icon: 'pi pi-chart-bar' }
 ]);
 
 // Computed properties for current and past elections

@@ -1,5 +1,6 @@
 <template>
   <div class="">
+    <AppBreadCrumbs :home="home" :items="items" />
     <PendingApplicationsModal
       v-if="isAdmin"
       v-model:visible="showPendingModal"
@@ -121,6 +122,7 @@
 <script setup>
 import { useCandidacyApplicationStore } from '../../../../stores/candidacy_application'
 import { useAuth } from '../../../../composables/useAuth'
+import AppBreadCrumbs from '~/components/AppBreadCrumbs.vue'
 
 const candidacyApplicationStore = useCandidacyApplicationStore()
 const { isAdmin } = useAuth()
@@ -139,6 +141,17 @@ const candidates = ref([])
 const loading = ref(true)
 const error = ref(null)
 const showPendingModal = ref(false)
+const home = ref({
+  label: 'Dashboard',
+  icon: 'pi pi-home',
+  route: '/dashboard'
+})
+
+const items = ref([
+  { label: 'Elections', icon: 'pi pi-list', route: '/elections' },
+  { label: 'Election Details', icon: 'pi pi-info-circle', route: `/elections/${electionId.value}` },
+  { label: 'Candidates', icon: 'pi pi-user' }
+])
 
 onMounted(async () => {
   await loadCandidates()

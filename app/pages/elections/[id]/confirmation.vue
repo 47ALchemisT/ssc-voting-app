@@ -12,13 +12,16 @@
       </p>
       
       <div class="bg-blue-50 p-4 rounded-lg text-left mb-8">
-        <h3 class="font-medium text-blue-800 mb-2">Your Selections</h3>
-        <ul class="space-y-3">
-          <li v-for="vote in votes" :key="vote.id" class="flex justify-between">
-            <span class="text-gray-700">{{ vote?.candidate?.position?.title || 'Unknown Position' }}:</span>
-            <span class="font-medium text-gray-900">{{ getCandidateFullName(vote) }}</span>
-          </li>
-        </ul>
+        <h3 class="font-medium text-blue-800 mb-4">Your Selections</h3>
+        <div v-for="position in getGroupedAndSortedPositions()" :key="position.id" class="mb-4 last:mb-0">
+          <h4 class="font-medium text-gray-700 mb-2">{{ position.title || 'Unknown Position' }}</h4>
+          <ul class="space-y-2 pl-4">
+            <li v-for="vote in getVotesForPosition(position.id)" :key="vote.id" class="flex justify-between items-center">
+              <span class="text-gray-900">{{ getCandidateFullName(vote) }}</span>
+              <span class="text-sm text-gray-500">Voted</span>
+            </li>
+          </ul>
+        </div>
       </div>
       
       <div class="border-t border-gray-200 pt-6">
@@ -65,6 +68,33 @@ const votes = ref([]);
 const positions = ref([]);
 const candidates = ref([]);
 const loading = ref(true);
+
+// Group and sort votes by position order
+const getGroupedAndSortedPositions = () => {
+  // Get unique positions from votes
+  const positionMap = new Map();
+  
+  votes.value.forEach(vote => {
+    if (vote?.candidate?.position) {
+      const pos = vote.candidate.position;
+      if (!positionMap.has(pos.id)) {
+        positionMap.set(pos.id, { ...pos });
+      }
+    }
+  });
+  
+  // Convert to array and sort by order
+  return Array.from(positionMap.values()).sort((a, b) => 
+    (a.order || 0) - (b.order || 0)
+  );
+};
+
+// Get votes for a specific position
+const getVotesForPosition = (positionId) => {
+  return votes.value.filter(vote => 
+    vote?.candidate?.position?.id === positionId
+  );
+};
 
 // Computed properties
 const isElectionEnded = computed(() => {
