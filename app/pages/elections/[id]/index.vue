@@ -95,12 +95,12 @@
               @click="navigateToCandidates"
             />
             <Button 
-              label="View Results" 
+              :label="electionStore.isElectionEnded(election) ? 'View Results' : 'View Summary'" 
               icon="pi pi-chart-bar" 
               size="small"
               outlined
               @click="navigateToResults"
-              v-tooltip.top="electionStore.isElectionEnded(election.id) ? 'Results will be available after the election ends' : ''"
+              v-tooltip.top="!electionStore.isElectionEnded(election) ? 'View current voting summary' : 'View final election results'"
             />
           </div>
         </InfoCard>
@@ -235,8 +235,6 @@ const groupedCandidates = computed(() => {
   })
 })
 
-console.log('title',election.title);
-
 const flattenedCandidates = computed(() => {
   return groupedCandidates.value.flatMap(group => group.candidates)
 })
@@ -265,7 +263,6 @@ const fetchElection = async () => {
     
     return response.data
   } catch (err) {
-    console.error('Error fetching election:', err)
     throw new Error(err.message || 'Failed to load election details')
   }
 }
@@ -299,14 +296,11 @@ const fetchCandidates = async () => {
     }))
     
   } catch (err) {
-    console.error('Error in fetchCandidates:', err)
-    // Don't set error state here to prevent hiding the rest of the page
     candidates.value = []
   }
 }
 
 const viewCandidate = (candidateId) => {
-  // Navigate to candidate profile or open a modal
   console.log('View candidate:', candidateId);
 };
 
@@ -350,9 +344,7 @@ const navigateToCandidates = () => {
 }
 
 const navigateToResults = () => {
-  if (electionStore.isElectionEnded(election.value)) {
-    router.push(`/elections/${electionId}/results`)
-  }
+  router.push(`/elections/${electionId}/results`)
 }
 
 // Start election -> set status to 'ongoing'
@@ -364,7 +356,6 @@ const startElection = async () => {
     election.value.status = 'ongoing'
     toast.add({ severity: 'success', summary: 'Election Started', detail: 'Status updated to ongoing.', life: 3000 })
   } catch (e) {
-    console.error('Failed to start election:', e)
     toast.add({ severity: 'error', summary: 'Error', detail: e.message || 'Failed to start election', life: 4000 })
   }
 }
@@ -384,7 +375,6 @@ const endElection = async () => {
     election.value.status = 'completed';
     
   } catch (e) {
-    console.error('Failed to end election:', e);
     toast.add({ 
       severity: 'error', 
       summary: 'Error', 
@@ -405,14 +395,12 @@ onMounted(async () => {
 
     // Fetch all voters list
     const allVotersList = await voteStore.fetchAllVotersList(electionId)
-    console.log('All voters list:', allVotersList)
     
     // Then fetch candidates
     await fetchCandidates()
     
   } catch (err) {
     error.value = err.message || 'Failed to load data. Please try again later.'
-    console.error('Error in onMounted:', err)
   } finally {
     loading.value = false
   }

@@ -67,11 +67,11 @@
         {{ error }}
       </div>
 
-      <div v-else-if="application" class="mx-auto bg-white rounded-lg border border-gray-200 p-6">
+      <div v-else-if="application" class="mx-auto bg-white rounded-lg">
         <div v-if="!loading" class="grid grid-cols-3 gap-6">
           <!-- Left Column -->
           <div class="col-span-1">
-            <div class="bg-gray-50 p-4 rounded-lg text-center">
+            <div class="bg-gray-50 border border-gray-200 p-4 rounded-lg text-center">
               <div class="mx-auto mb-4 w-48 h-48 rounded-lg overflow-hidden flex items-center justify-center bg-gray-200">
                 <img
                   v-if="application.user?.avatar_url"
@@ -101,7 +101,7 @@
                 </div>
               </div>
             </div>
-            <div v-if="authStore.isAdmin" class="mt-6 pt-6 border-t border-gray-200">
+            <div v-if="authStore.isAdmin && shouldShowAdminActions" class="mt-6 pt-6 border-t border-gray-200">
                 <h4 class="text-sm font-medium text-gray-500 mb-4">ADMIN ACTIONS</h4>
                 <div class="flex gap-3">
                     <Button 
@@ -146,75 +146,95 @@
                   </div>
                 </div>
                 <div>
-                  <h4 class="text-sm font-medium text-gray-500 mb-2">REQUIREMENTS</h4>
-                  <div class="bg-gray-50 p-4 rounded border border-gray-200 space-y-4">
-                    <!-- Grade Slip -->
-                    <div v-if="application.grade_slip" class="border-b border-gray-100 pb-4">
-                      <h5 class="text-sm font-medium text-gray-700 mb-2">Grade Slip</h5>
-                      <div class="flex items-center gap-3 p-3 bg-white rounded border border-gray-200">
-                        <i class="pi pi-file-pdf text-red-500 text-2xl"></i>
-                        <div class="flex-1 min-w-0">
-                          <p class="text-sm font-medium text-gray-900 truncate">Grade Slip</p>
+                  <h4 class="text-sm font-medium text-gray-500 mb-4">REQUIREMENTS</h4>
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Grade Slip Card -->
+                    <div v-if="application.grade_slip" class="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-200">
+                      <div class="p-4">
+                        <div class="flex items-start">
+                          <div class="bg-red-50 p-3 rounded-lg">
+                            <i class="pi pi-file-pdf text-red-500 text-xl"></i>
+                          </div>
+                          <div class="ml-4 flex-1 min-w-0">
+                            <h5 class="text-sm font-medium text-gray-900 mb-1">Grade Slip</h5>
+                            <p class="text-xs text-gray-500">Document</p>
+                          </div>
+                          <a :href="application.grade_slip" target="_blank" class="text-primary-600 hover:text-primary-800 self-center">
+                            <i class="pi pi-external-link"></i>
+                          </a>
                         </div>
-                        <a :href="application.grade_slip" target="_blank" class="text-primary-600 hover:text-primary-800">
-                          <i class="pi pi-external-link"></i> View
-                        </a>
                       </div>
                     </div>
 
-                    <!-- Activity Certificate -->
-                    <div v-if="application.certificate_activity" class="border-b border-gray-100 pb-4">
-                      <h5 class="text-sm font-medium text-gray-700 mb-2">Certificate of Activity</h5>
-                      <div class="flex items-center gap-3 p-3 bg-white rounded border border-gray-200">
-                        <i class="pi pi-file-pdf text-red-500 text-2xl"></i>
-                        <div class="flex-1 min-w-0">
-                          <p class="text-sm font-medium text-gray-900 truncate">Activity Certificate</p>
+                    <!-- Activity Certificate Card -->
+                    <div v-if="application.certificate_activity" class="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-200">
+                      <div class="p-4">
+                        <div class="flex items-start">
+                          <div class="bg-blue-50 p-3 rounded-lg">
+                            <i class="pi pi-file-pdf text-blue-500 text-xl"></i>
+                          </div>
+                          <div class="ml-4 flex-1 min-w-0">
+                            <h5 class="text-sm font-medium text-gray-900 mb-1">Certificate of Activity</h5>
+                            <p class="text-xs text-gray-500">Document</p>
+                          </div>
+                          <a :href="application.certificate_activity" target="_blank" class="text-primary-600 hover:text-primary-800 self-center">
+                            <i class="pi pi-external-link"></i>
+                          </a>
                         </div>
-                        <a :href="application.certificate_activity" target="_blank" class="text-primary-600 hover:text-primary-800">
-                          <i class="pi pi-external-link"></i> View
-                        </a>
                       </div>
                     </div>
 
-                    <!-- Certificate of Candidacy -->
-                    <div v-if="application.certificate_candidacy" class="border-b border-gray-100 pb-4">
-                      <h5 class="text-sm font-medium text-gray-700 mb-2">Certificate of Candidacy</h5>
-                      <div class="flex items-center gap-3 p-3 bg-white rounded border border-gray-200">
-                        <i class="pi pi-file-pdf text-red-500 text-2xl"></i>
-                        <div class="flex-1 min-w-0">
-                          <p class="text-sm font-medium text-gray-900 truncate">Certificate of Candidacy</p>
+                    <!-- Certificate of Candidacy Card -->
+                    <div v-if="application.certificate_candidacy" class="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-200">
+                      <div class="p-4">
+                        <div class="flex items-start">
+                          <div class="bg-green-50 p-3 rounded-lg">
+                            <i class="pi pi-file-pdf text-green-500 text-xl"></i>
+                          </div>
+                          <div class="ml-4 flex-1 min-w-0">
+                            <h5 class="text-sm font-medium text-gray-900 mb-1">Certificate of Candidacy</h5>
+                            <p class="text-xs text-gray-500">Document</p>
+                          </div>
+                          <a :href="application.certificate_candidacy" target="_blank" class="text-primary-600 hover:text-primary-800 self-center">
+                            <i class="pi pi-external-link"></i>
+                          </a>
                         </div>
-                        <a :href="application.certificate_candidacy" target="_blank" class="text-primary-600 hover:text-primary-800">
-                          <i class="pi pi-external-link"></i> View
-                        </a>
                       </div>
                     </div>
 
-                    <!-- Back Subject Record -->
-                    <div v-if="application.back_sub_record" class="border-b border-gray-100 pb-4">
-                      <h5 class="text-sm font-medium text-gray-700 mb-2">Back Subject Record</h5>
-                      <div class="flex items-center gap-3 p-3 bg-white rounded border border-gray-200">
-                        <i class="pi pi-file-pdf text-red-500 text-2xl"></i>
-                        <div class="flex-1 min-w-0">
-                          <p class="text-sm font-medium text-gray-900 truncate">Back Subject Record</p>
+                    <!-- Back Subject Record Card -->
+                    <div v-if="application.back_sub_record" class="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-200">
+                      <div class="p-4">
+                        <div class="flex items-start">
+                          <div class="bg-purple-50 p-3 rounded-lg">
+                            <i class="pi pi-file-pdf text-purple-500 text-xl"></i>
+                          </div>
+                          <div class="ml-4 flex-1 min-w-0">
+                            <h5 class="text-sm font-medium text-gray-900 mb-1">Back Subject Record</h5>
+                            <p class="text-xs text-gray-500">Document</p>
+                          </div>
+                          <a :href="application.back_sub_record" target="_blank" class="text-primary-600 hover:text-primary-800 self-center">
+                            <i class="pi pi-external-link"></i>
+                          </a>
                         </div>
-                        <a :href="application.back_sub_record" target="_blank" class="text-primary-600 hover:text-primary-800">
-                          <i class="pi pi-external-link"></i> View
-                        </a>
                       </div>
                     </div>
 
-                    <!-- Certificate of Registration -->
-                    <div v-if="application.cor" class="pb-2">
-                      <h5 class="text-sm font-medium text-gray-700 mb-2">Certificate of Registration</h5>
-                      <div class="flex items-center gap-3 p-3 bg-white rounded border border-gray-200">
-                        <i class="pi pi-file-pdf text-red-500 text-2xl"></i>
-                        <div class="flex-1 min-w-0">
-                          <p class="text-sm font-medium text-gray-900 truncate">Certificate of Registration</p>
+                    <!-- Certificate of Registration Card -->
+                    <div v-if="application.cor" class="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-200">
+                      <div class="p-4">
+                        <div class="flex items-start">
+                          <div class="bg-amber-50 p-3 rounded-lg">
+                            <i class="pi pi-file-pdf text-amber-500 text-xl"></i>
+                          </div>
+                          <div class="ml-4 flex-1 min-w-0">
+                            <h5 class="text-sm font-medium text-gray-900 mb-1">Certificate of Registration</h5>
+                            <p class="text-xs text-gray-500">Document</p>
+                          </div>
+                          <a :href="application.cor" target="_blank" class="text-primary-600 hover:text-primary-800 self-center">
+                            <i class="pi pi-external-link"></i>
+                          </a>
                         </div>
-                        <a :href="application.cor" target="_blank" class="text-primary-600 hover:text-primary-800">
-                          <i class="pi pi-external-link"></i> View
-                        </a>
                       </div>
                     </div>
                   </div>
@@ -228,11 +248,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useCandidacyApplicationStore } from '../../../../stores/candidacy_application'
+import { useElectionStore } from '../../../../stores/elections'
 import { useAuth } from '../../../../composables/useAuth'
-import {useAuthStore} from '../../../../stores/auth'
+import { useAuthStore } from '../../../../stores/auth'
 
 definePageMeta({
     layout: 'dashboard-layout',
@@ -253,6 +274,8 @@ const showResultDialog = ref(false)
 const resultMessage = ref('')
 
 const candidacyStore = useCandidacyApplicationStore()
+const electionStore = useElectionStore()
+const showAdminActions = ref(true)
 
 // Status constants for reference
 const STATUS = {
@@ -331,6 +354,12 @@ const updateStatus = (status) => {
   }
 }
 
+// Check if admin actions should be shown based on election status
+const shouldShowAdminActions = computed(() => {
+  if (!application.value?.election) return true
+  return !['ongoing', 'completed'].includes(application.value.election.status?.toLowerCase())
+})
+
 // Fetch application details
 onMounted(async () => {
   if (!applicationId) {
@@ -346,6 +375,18 @@ onMounted(async () => {
     if (fetchError) throw fetchError
     
     application.value = data
+    
+    // If application has an election ID, fetch its status
+    if (data.election_id) {
+      const { data: electionData } = await electionStore.getElectionById(data.election_id)
+      if (electionData) {
+        // Ensure the application has the election data
+        application.value = {
+          ...application.value,
+          election: electionData
+        }
+      }
+    }
   } catch (err) {
     console.error('Error fetching application:', err)
     error.value = err.message || 'Failed to load application details'

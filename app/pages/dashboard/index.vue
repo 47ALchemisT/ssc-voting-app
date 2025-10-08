@@ -98,10 +98,6 @@ onMounted(() => {
   checkUserRole()
 })
 
-const handleSignOut = async () => {
-  await signOut()
-}
-
 definePageMeta({
   middleware: 'auth',
   layout: 'dashboard-layout'

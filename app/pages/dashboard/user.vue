@@ -1,116 +1,65 @@
 <template>
   <div>
-    <!-- Dashboard Content -->
-    <div>
-      <!-- Welcome Section -->
-      <div class="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl p-6 text-white mb-8">
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 class="text-2xl font-bold mb-2">Welcome back, {{ user?.user_metadata?.name || 'Voter' }}!</h1>
-            <p class="opacity-90">Your voice matters. Cast your vote in the ongoing elections.</p>
-          </div>
-          <button
-            @click="handleSignOut"
-            class="mt-4 md:mt-0 px-4 py-2 bg-white text-blue-600 rounded-lg font-medium hover:bg-opacity-90 transition-all"
-          >
-            Sign Out
-          </button>
-        </div>
+    <!-- Loading State -->
+    <div v-if="isLoading" class="p-6 bg-white rounded-lg shadow animate-pulse">
+      <div class="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
+      <div class="h-4 bg-gray-100 rounded w-1/2 mb-4"></div>
+      <div class="space-y-2">
+        <div class="h-4 bg-gray-100 rounded"></div>
+        <div class="h-4 bg-gray-100 rounded w-5/6"></div>
       </div>
+    </div>
 
-      <!-- Active Elections -->
-      <div class="mb-8">
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="text-xl font-semibold text-gray-900">Active Elections</h2>
-          <button 
-            @click="navigateTo('/elections')" 
-            class="text-sm text-blue-600 hover:underline"
-          >
-            View All
-          </button>
+    <!-- Error State -->
+    <div v-else-if="error" class="bg-red-50 border-l-4 border-red-400 p-4 mb-6">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd" />
+          </svg>
         </div>
-        
-        <div v-if="activeElections.length > 0" class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <div 
-            v-for="election in activeElections" 
-            :key="election.id"
-            class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 hover:shadow-md transition-shadow"
-          >
-            <div class="flex justify-between items-start mb-4">
-              <h3 class="font-semibold text-lg">{{ election.title }}</h3>
-              <span 
-                class="px-2 py-1 text-xs rounded-full"
-                :class="election.status === 'voted' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'"
-              >
-                {{ election.status === 'voted' ? 'Voted' : 'Active' }}
-              </span>
-            </div>
-            <p class="text-gray-600 text-sm mb-4">{{ election.description }}</p>
-            <div class="flex justify-between items-center text-sm text-gray-500">
-              <span>Ends {{ formatDate(election.end_date) }}</span>
-              <button 
-                @click="navigateTo(`/elections/${election.id}`)"
-                class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
-              >
-                {{ election.status === 'voted' ? 'View Results' : 'Vote Now' }}
-              </button>
-            </div>
-          </div>
-        </div>
-        
-        <div v-else class="bg-white rounded-xl p-8 text-center">
-          <div class="text-gray-400 mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 002-2h10a2 2 0 012 2v14a2 2 0 01-2 2H7a2 2 0 01-2-2v-4m4 0V5m0 0H5m2 0h2" />
-            </svg>
-          </div>
-          <h3 class="text-lg font-medium text-gray-900 mb-1">No active elections</h3>
-          <p class="text-gray-500">There are currently no elections available for voting.</p>
-        </div>
-      </div>
-
-      <!-- Quick Actions -->
-      <div class="mb-8">
-        <h2 class="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <button 
-            v-for="action in quickActions" 
-            :key="action.title"
-            @click="action.handler"
-            class="p-4 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-center"
-          >
-            <div class="w-10 h-10 mx-auto mb-2 flex items-center justify-center rounded-full" :class="action.bgColor">
-              <span class="text-xl">{{ action.icon }}</span>
-            </div>
-            <span class="text-sm font-medium">{{ action.title }}</span>
-          </button>
+        <div class="ml-3">
+          <p class="text-sm text-red-700">{{ error }}</p>
         </div>
       </div>
     </div>
+
+    <!-- Current Election -->
+    <template v-else>
+      <CurrentElection 
+        :current-election="currentElection"
+        :candidates="candidates"
+        :pending-candidates="[]"
+        :voters="[]"
+        :positions="[]"
+        class="mb-6"
+      />
+    </template>
   </div>
 </template>
-
-// Page configuration
-definePageMeta({
-  middleware: 'auth',
-  layout: 'dashboard-layout'
-});
 
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '~~/stores/auth';
 import { useElectionStore } from '~~/stores/elections';
+import { useCandidacyApplicationStore } from '~~/stores/candidacy_application';
 import { useVoteStore } from '~~/stores/votes';
+import CurrentElection from './components/CurrentElection.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
 const electionStore = useElectionStore();
+const candidacyApplicationStore = useCandidacyApplicationStore();
 const voteStore = useVoteStore();
 
 // State
 const user = ref({});
+const currentElection = ref(null);
+const candidates = ref([]);
 const activeElections = ref([]);
+const isLoading = ref(true);
+const error = ref(null);
 
 // Format date
 const formatDate = (dateString) => {
@@ -122,18 +71,30 @@ const formatDate = (dateString) => {
 // Fetch data
 const fetchData = async () => {
   try {
-    // Fetch active elections
+    isLoading.value = true;
+    error.value = null;
+    
+    // Fetch current election
     const { data: elections, error: electionError } = await electionStore.getCurrentElections();
     if (electionError) throw electionError;
     
     if (elections && elections.length > 0) {
+      currentElection.value = elections[0];
+      
+      // Fetch candidates for the current election
+      if (currentElection.value?.id) {
+        const { data: candidatesData, error: candidatesError } = 
+          await candidacyApplicationStore.getApplicationsByElection(currentElection.value.id, 1);
+        if (candidatesError) throw candidatesError;
+        candidates.value = candidatesData || [];
+      }
+      
       // Check which elections the user has voted in
       const electionsWithStatus = await Promise.all(elections.map(async (election) => {
-        const { data: vote, error: voteError } = await voteStore.getUserVote(election.id);
-        if (voteError) console.error('Error checking vote status:', voteError);
+        const hasVoted = await voteStore.hasCurrentUserVoted(election.id);
         return {
           ...election,
-          status: vote ? 'voted' : 'active'
+          status: hasVoted ? 'voted' : 'active'
         };
       }));
       
@@ -141,15 +102,9 @@ const fetchData = async () => {
     }
   } catch (err) {
     console.error('Error fetching data:', err);
-  }
-};
-
-const handleSignOut = async () => {
-  try {
-    await userStore.signOut();
-    router.push('/auth/login');
-  } catch (error) {
-    console.error('Error signing out:', error);
+    error.value = 'Failed to load election data. Please try again later.';
+  } finally {
+    isLoading.value = false;
   }
 };
 
@@ -161,39 +116,43 @@ const navigateTo = (path) => {
 const quickActions = [
   {
     title: 'Vote Now',
+    description: 'Cast your vote in active elections',
     icon: '🗳️',
-    bgColor: 'bg-blue-100',
+    bgColor: 'bg-blue-50',
     handler: () => navigateTo('/elections')
   },
   {
     title: 'View Results',
+    description: 'See current election results',
     icon: '📊',
-    bgColor: 'bg-green-100',
+    bgColor: 'bg-green-50',
     handler: () => navigateTo('/results')
   },
   {
     title: 'Election Rules',
+    description: 'Review voting guidelines',
     icon: '📜',
-    bgColor: 'bg-yellow-100',
+    bgColor: 'bg-yellow-50',
     handler: () => navigateTo('/election-rules')
   },
   {
     title: 'Help Center',
+    description: 'Get assistance with voting',
     icon: '❓',
-    bgColor: 'bg-purple-100',
-    handler: () => navigateTo('/help')
-  },
-  {
-    title: 'Help Center',
-    bgColor: 'bg-purple-100',
+    bgColor: 'bg-purple-50',
     handler: () => navigateTo('/help')
   }
 ];
 
 // Lifecycle hooks
-onMounted(() => {
-  user.value = authStore.user || {};
-  fetchData();
+onMounted(async () => {
+  try {
+    user.value = authStore.user || {};
+    await fetchData();
+  } catch (err) {
+    console.error('Error in component mount:', err);
+    error.value = 'An error occurred while initializing the dashboard.';
+  }
 });
 </script>
 

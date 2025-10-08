@@ -200,22 +200,29 @@ export const useVoteStore = defineStore('votes', () => {
 
   // Check if user has already voted in an election
   const hasUserVoted = async (userId, electionId) => {
+    if (!userId || !electionId) return false;
+    
     try {
       const { data, error: err } = await supabase
         .from('votes')
         .select('id, voter_id')
-        .eq('election_id', electionId);
+        .eq('election_id', electionId)
+        .eq('voter_id', userId);
 
       if (err) throw err;
       
-      // Check if any of the votes belong to this user
-      const userVotes = data.filter(vote => vote.voter_id === userId);
-      return userVotes.length > 0;
+      return data && data.length > 0;
       
     } catch (err) {
       console.error('Error checking vote status:', err);
       return false;
     }
+  };
+  
+  // Check if current user has voted in the current election
+  const hasCurrentUserVoted = async (electionId) => {
+    if (!authStore.profile?.id) return false;
+    return await hasUserVoted(authStore.profile.id, electionId);
   };
 
   // Get all votes for a user in a specific election
@@ -265,7 +272,15 @@ export const useVoteStore = defineStore('votes', () => {
 
   // Get all votes for an election
   const getVotesByElection = (electionId) => {
-    return votes.value.filter(vote => vote.election_id === electionId);
+    if (electionId === undefined || electionId === null) {
+      console.warn('getVotesByElection called with undefined or null electionId');
+      return [];
+    }
+    // Convert both to strings for comparison to handle number/string mismatches
+    const targetElectionId = String(electionId);
+    return votes.value.filter(vote => 
+      vote && String(vote.election_id) === targetElectionId
+    );
   };
 
   // Get all votes for a candidate
@@ -315,5 +330,6 @@ export const useVoteStore = defineStore('votes', () => {
     isUserEligibleToVote,
     fetchAllVotersList,
     getVoteStatistics,
+    hasCurrentUserVoted,
   };
 });

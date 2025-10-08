@@ -7,27 +7,19 @@
                 <h2 class="text-lg font-medium text-gray-800">Voters List</h2>
                 <p class="text-gray-500 text-sm">List below are the people that are eligible to vote in this election.</p>
             </div>
-            <div class="">
-              <Button 
-                    label="Back to Election" 
-                    icon="pi pi-arrow-left" 
-                    size="small"
-                    @click="navigateBack"
-                    class="p-button-outlined"
-                />
-            </div>
         </div>
         <div>
             <div class="flex justify-between gap-2">
               <IconField>
                   <InputIcon class="pi pi-search" />
-                  <InputText v-model="value1" placeholder="Search" />
+                  <InputText v-model="value1" placeholder="Search" size="small" />
               </IconField>
               <Button 
                   v-if="authStore.isAdmin"
                   label="Import Voters List"
                   icon="pi pi-upload"
                   @click="showImportDialog = true"
+                  size="small"
               />
             </div>
         </div>

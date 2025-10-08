@@ -32,132 +32,169 @@
     </div>
     <div class="h-[30rem]">
       <div v-if="isLoading" class="h-full w-full bg-gray-100 rounded animate-pulse"></div>
+      <div v-else-if="error" class="h-full flex items-center justify-center text-red-500">
+        {{ error }}
+      </div>
       <Chart 
-        v-else
+        v-else-if="chartData.labels && chartData.labels.length > 0"
         type="line" 
-        :data="timeRange === 'daily' ? dailyVotesData : hourlyVotesData" 
-        :options="votesOverTimeOptions" 
+        :data="chartData" 
+        :options="chartOptions" 
         class="w-full h-full" 
       />
+      <div v-else class="h-full flex items-center justify-center text-gray-500">
+        No voting data available
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, defineProps } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import Chart from 'primevue/chart';
 
 const props = defineProps({
   isLoading: {
     type: Boolean,
     default: false
+  },
+  votes: {
+    type: Array,
+    default: () => []
+  },
+  electionId: {
+    type: String,
+    required: true
   }
 });
 
 const timeRange = ref('daily');
+const error = ref(null);
 
-// Votes over time data
-const dailyVotesData = ref({});
-const hourlyVotesData = ref({});
-const votesOverTimeOptions = ref({});
-
-// Generate dates between start and end date
-const generateDateRange = (start, end) => {
-  const dates = [];
-  let currentDate = new Date(start);
+// Process votes data for the chart
+const chartData = computed(() => {
+  if (!props.votes || props.votes.length === 0) return { labels: [], datasets: [] };
   
-  while (currentDate <= end) {
-    dates.push(new Date(currentDate));
-    currentDate.setDate(currentDate.getDate() + 1);
-  }
-  
-  return dates;
-};
-
-// Generate time slots for a day
-const generateTimeSlots = () => {
-  const slots = [];
-  for (let hour = 0; hour < 24; hour++) {
-    slots.push(`${hour.toString().padStart(2, '0')}:00`);
-  }
-  return slots;
-};
-
-// Generate random data for the chart
-const generateRandomData = (count, min, max) => {
-  return Array.from({ length: count }, () => 
-    Math.floor(Math.random() * (max - min + 1)) + min
-  );
-};
-
-// Set up chart data
-const setupChartData = () => {
-  // Generate daily data (last 7 days)
-  const endDate = new Date();
-  const startDate = new Date();
-  startDate.setDate(endDate.getDate() - 6);
-  
-  const dateLabels = generateDateRange(startDate, endDate)
-    .map(date => date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
-  
-  dailyVotesData.value = {
-    labels: dateLabels,
-    datasets: [
-      {
-        label: 'Votes',
-        data: generateRandomData(dateLabels.length, 10, 100),
-        fill: false,
-        borderColor: '#3B82F6',
-        tension: 0.4
+  try {
+    // Votes are already filtered by election ID in the parent component
+    const votes = [...props.votes];
+    
+    if (timeRange.value === 'daily') {
+      // Group by day
+      const dailyVotes = {};
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(endDate.getDate() - 6); // Last 7 days
+      
+      // Initialize with 0 votes for each day
+      const date = new Date(startDate);
+      while (date <= endDate) {
+        const dateStr = date.toISOString().split('T')[0];
+        dailyVotes[dateStr] = 0;
+        date.setDate(date.getDate() + 1);
       }
-    ]
-  };
-  
-  // Generate hourly data (24 hours)
-  const timeLabels = generateTimeSlots();
-  hourlyVotesData.value = {
-    labels: timeLabels,
-    datasets: [
-      {
-        label: 'Votes',
-        data: generateRandomData(timeLabels.length, 5, 50),
-        fill: false,
-        borderColor: '#3B82F6',
-        tension: 0.4
-      }
-    ]
-  };
-  
-  // Set chart options
-  votesOverTimeOptions.value = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: false
-      },
-      tooltip: {
-        mode: 'index',
-        intersect: false
-      }
-    },
-    scales: {
-      x: {
-        grid: {
-          display: false
+      
+      // Count votes per day
+      votes.forEach(vote => {
+        if (vote.created_at) {
+          const voteDate = new Date(vote.created_at).toISOString().split('T')[0];
+          if (dailyVotes[voteDate] !== undefined) {
+            dailyVotes[voteDate]++;
+          }
         }
-      },
-      y: {
-        beginAtZero: true,
-        ticks: {
-          precision: 0
+      });
+      
+      const labels = Object.keys(dailyVotes).map(date => 
+        new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      );
+      
+      return {
+        labels,
+        datasets: [{
+          label: 'Votes',
+          data: Object.values(dailyVotes),
+          fill: false,
+          borderColor: '#3B82F6',
+          tension: 0.4
+        }]
+      };
+    } else {
+      // Group by hour
+      const hourlyVotes = Array(24).fill(0);
+      
+      // Count votes per hour
+      votes.forEach(vote => {
+        if (vote.created_at) {
+          const hour = new Date(vote.created_at).getHours();
+          hourlyVotes[hour]++;
+        }
+      });
+      
+      const labels = hourlyVotes.map((_, i) => 
+        `${i.toString().padStart(2, '0')}:00`
+      );
+      
+      return {
+        labels,
+        datasets: [{
+          label: 'Votes',
+          data: hourlyVotes,
+          fill: false,
+          borderColor: '#3B82F6',
+          tension: 0.4
+        }]
+      };
+    }
+  } catch (err) {
+    console.error('Error processing chart data:', err);
+    error.value = 'Error loading voting data';
+    return { labels: [], datasets: [] };
+  }
+});
+
+// Chart options
+const chartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      display: false
+    },
+    tooltip: {
+      mode: 'index',
+      intersect: false,
+      callbacks: {
+        label: function(context) {
+          return `Votes: ${context.parsed.y}`;
         }
       }
     }
-  };
+  },
+  scales: {
+    x: {
+      grid: {
+        display: false
+      },
+      title: {
+        display: true,
+        text: () => timeRange.value === 'daily' ? 'Date' : 'Hour of Day'
+      }
+    },
+    y: {
+      beginAtZero: true,
+      ticks: {
+        precision: 0
+      },
+      title: {
+        display: true,
+        text: 'Number of Votes'
+      }
+    }
+  }
 };
 
-onMounted(() => {
-  setupChartData();
+// Watch for changes in time range to clear any errors
+watch(timeRange, () => {
+  error.value = null;
 });
 </script>

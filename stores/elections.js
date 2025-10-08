@@ -39,6 +39,24 @@ export const useElectionStore = defineStore('elections', () => {
     }
   };
 
+  
+  const forceEndElection = async (electionId) => {
+    try{
+      const { data, error: err } = await supabase
+        .from('elections')
+        .update({ status: 'completed' })
+        .eq('id', electionId)
+        .select()
+        .single();
+
+      return { data, error: null };
+    }catch (err){
+      error.value = err.message;
+      console.error('Error force ending election:', err);
+      return { data: null, error: err.message };
+    }
+  };
+
   // Fetch all elections
   const fetchElections = async () => {
     loading.value = true;
@@ -330,6 +348,7 @@ export const useElectionStore = defineStore('elections', () => {
     isElectionActive,
     isElectionEnded,
     clearError,
-    extendElectionEndDate
+    extendElectionEndDate,
+    forceEndElection
   };
 });

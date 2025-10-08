@@ -6,13 +6,22 @@
             <h1 class="text-xl font-medium text-gray-800">Profile Information</h1>
             <p class="text-sm text-gray-500">View and edit your profile information</p>
         </div>
-      <Button
-        v-if="!editMode"
-        @click="editMode = true"
-        size="small"
-        icon="pi pi-pencil"
-        label="Edit Profile"
-      />
+      <div class="flex gap-2">
+        <Button
+          @click="showChangePasswordDialog = true"
+          size="small"
+          icon="pi pi-key"
+          class="p-button-outlined p-button-sm"
+          label="Change Password"
+        />
+        <Button
+          v-if="!editMode"
+          @click="editMode = true"
+          size="small"
+          icon="pi pi-pencil"
+          label="Edit Profile"
+        />
+      </div>
     </div>
     
     <div class="bg-white rounded-lg border border-gray-200 p-6">
@@ -195,6 +204,72 @@
         </div>
       </div>
     </div>
+
+    <!-- Change Password Dialog -->
+    <Dialog 
+      v-model:visible="showChangePasswordDialog" 
+      header="Change Password" 
+      :modal="true"
+      :style="{ width: '450px' }"
+      :closable="!changingPassword"
+      :closeOnEscape="!changingPassword"
+    >
+      <div class="p-fluid">
+        <div class="field">
+          <label for="currentPassword">Current Password</label>
+          <Password 
+            id="currentPassword" 
+            v-model="passwordForm.currentPassword" 
+            :feedback="false" 
+            toggleMask 
+            :disabled="changingPassword"
+            class="w-full"
+            inputClass="w-full"
+          />
+        </div>
+        <div class="field mt-4">
+          <label for="newPassword">New Password</label>
+          <Password 
+            id="newPassword" 
+            v-model="passwordForm.newPassword" 
+            :feedback="true" 
+            toggleMask 
+            :disabled="changingPassword"
+            class="w-full"
+            inputClass="w-full"
+          />
+        </div>
+        <div class="field mt-4">
+          <label for="confirmPassword">Confirm New Password</label>
+          <Password 
+            id="confirmPassword" 
+            v-model="passwordForm.confirmPassword" 
+            :feedback="false" 
+            toggleMask 
+            :disabled="changingPassword"
+            class="w-full"
+            inputClass="w-full"
+            @keyup.enter="changePassword"
+          />
+        </div>
+      </div>
+      <template #footer>
+        <Button 
+          label="Cancel" 
+          icon="pi pi-times" 
+          class="p-button-text" 
+          :disabled="changingPassword"
+          @click="showChangePasswordDialog = false" 
+        />
+        <Button 
+          label="Change Password" 
+          icon="pi pi-check" 
+          class="p-button-primary" 
+          :loading="changingPassword"
+          @click="changePassword" 
+        />
+      </template>
+    </Dialog>
   </div>
 </template>
 
@@ -202,7 +277,9 @@
 import { ref, computed, onMounted } from 'vue'
 import Dropdown from 'primevue/dropdown'
 import InputText from 'primevue/inputtext'
+import Password from 'primevue/password'
 import { useAuthStore } from '../../../stores/auth'
+import { useToast } from 'primevue/usetoast'
 import AppBreadCrumbs from '~/components/AppBreadCrumbs.vue'
 
 definePageMeta({
@@ -222,6 +299,15 @@ const items = ref([
 
 const authStore = useAuthStore()
 const toast = useToast()
+
+// Password change dialog state
+const showChangePasswordDialog = ref(false)
+const changingPassword = ref(false)
+const passwordForm = ref({
+  currentPassword: '',
+  newPassword: '',
+  confirmPassword: ''
+})
 
 const editMode = ref(false)
 const colleges = ref([])
@@ -311,6 +397,51 @@ const resetForm = () => {
     Object.assign(form.value, authStore.profile)
   }
   editMode.value = false
+}
+
+// Change password
+const changePassword = async () => {
+  try {
+    changingPassword.value = true
+    
+    // Validate passwords match
+    if (passwordForm.value.newPassword !== passwordForm.value.confirmPassword) {
+      throw new Error('New password and confirm password do not match')
+    }
+    
+    // Call the changePassword method from the auth store
+    const { error, message } = await authStore.changePassword(
+      passwordForm.value.currentPassword,
+      passwordForm.value.newPassword
+    )
+    
+    if (error) throw new Error(error)
+    
+    toast.add({
+      severity: 'success',
+      summary: 'Success',
+      detail: message || 'Password changed successfully',
+      life: 3000
+    })
+    
+    // Reset and close the dialog
+    passwordForm.value = {
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: ''
+    }
+    showChangePasswordDialog.value = false
+  } catch (err) {
+    console.error('Failed to change password:', err)
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: err.message || 'Failed to change password',
+      life: 3000
+    })
+  } finally {
+    changingPassword.value = false
+  }
 }
 
 // Save profile

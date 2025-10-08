@@ -6,6 +6,7 @@
       @click="openDialog()" 
       icon="pi pi-plus"
       class="mb-4"
+      size="small"
     />
     
     <Dialog 

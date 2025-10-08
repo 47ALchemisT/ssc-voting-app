@@ -22,13 +22,6 @@
             size="small"
             @click="showPendingModal = true"
           />
-          <Button 
-            label="Back to Election" 
-            size="small"
-            outline
-            icon="pi pi-arrow-left" 
-            @click="navigateBack" 
-          />
         </div>
       </div>
     </div>

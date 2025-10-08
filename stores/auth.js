@@ -275,6 +275,101 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  const deactivateUser = async (userId) => {
+    try {
+      const { error } = await supabase
+        .from('user_profile')
+        .update({ status: 0 })
+        .eq('user_id', userId)
+      
+      if (error) throw error
+      
+      return { error: null }
+    } catch (error) {
+      return { error }
+    }
+  }
+
+  const activateUser = async (userId) => {
+    try {
+      const { error } = await supabase
+        .from('user_profile')
+        .update({ status: 1 })
+        .eq('user_id', userId)
+      
+      if (error) throw error
+      
+      return { error: null }
+    } catch (error) {
+      return { error }
+    }
+  }
+
+  // Change user password
+  const changePassword = async (currentPassword, newPassword) => {
+    try {
+      if (!user.value) {
+        return { error: 'No user is currently logged in' };
+      }
+
+      // First, re-authenticate the user with their current password
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email: user.value.email,
+        password: currentPassword
+      });
+
+      if (authError) {
+        if (authError.message.includes('Invalid login credentials')) {
+          return { error: 'Current password is incorrect' };
+        }
+        throw authError;
+      }
+
+      // If re-authentication is successful, update the password
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (updateError) throw updateError;
+
+      return { error: null, message: 'Password updated successfully' };
+    } catch (error) {
+      console.error('Error changing password:', error);
+      return { 
+        error: error.message || 'Failed to change password. Please try again.' 
+      };
+    }
+  }
+
+  const checkInactiveStatus = async () => {
+    try {
+      // Get the current authenticated user
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser()
+      if (authError) throw authError
+      if (!authUser) return { isInactive: false, error: 'No authenticated user' }
+
+      // Check user profile status
+      const { data: userProfile, error: profileError } = await supabase
+        .from('user_profile')
+        .select('status')
+        .eq('user_id', authUser.id)
+        .single()
+      
+      if (profileError) throw profileError
+      
+      return { 
+        isInactive: userProfile.status === 0,
+        error: null
+      }
+    } catch (error) {
+      console.error('Error checking inactive status:', error)
+      return { 
+        isInactive: false,
+        error: error.message || 'Failed to check user status' 
+      }
+    }
+  }
+
   return {
     user,
     users,
@@ -291,6 +386,10 @@ export const useAuthStore = defineStore('auth', () => {
     fetchAllUsers,
     signUp,
     signIn,
-    signOut
+    signOut,
+    deactivateUser,
+    checkInactiveStatus,
+    changePassword,
+    activateUser
   }
 })

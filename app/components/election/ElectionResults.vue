@@ -2,8 +2,17 @@
   <div class="space-y-6">
     <div class="flex items-center justify-between">
         <div>
-          <h3 class="text-lg font-semibold text-gray-800">Elections Result</h3>
-          <p class="text-sm text-gray-500">Data is based on the votes casted by the students.</p>
+          <h3 class="text-lg font-semibold text-gray-800">
+            {{ electionStore.isElectionEnded(election) ? 'Election Results' : 'Voting Summary' }}
+          </h3>
+          <p class="text-sm text-gray-500">
+            <span v-if="!electionStore.isElectionEnded(election)" class="text-amber-600 font-medium">
+              Live results - voting is still in progress
+            </span>
+            <span v-else>
+              Final results based on all votes cast.
+            </span>
+          </p>
         </div>
         <div class="flex gap-2">
             <ExportResults 
@@ -34,6 +43,10 @@
 
       <div v-else class="space-y-6">
         <div v-for="position in positions" :key="position.id" class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <div v-if="!electionStore.isElectionEnded(election)" class="bg-blue-50 border-b border-blue-100 px-4 py-2 text-sm text-blue-700 flex items-center">
+            <i class="pi pi-info-circle mr-2"></i>
+            <span>Results are updating in real-time. These are the current vote counts.</span>
+          </div>
           <div class="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
             <div>
               <h2 class="text-lg font-semibold text-gray-900">{{ position.title }}</h2>
@@ -67,14 +80,16 @@
                   </div>
                 </div>
                 <div class="flex gap-2">
-                  <span class="text-gray-700 font-semibold">{{ candidate.vote_count }}</span>
+                  <span class="text-gray-700 font-semibold">
+                    {{ authStore.isAdmin || (election && electionStore.isElectionEnded(election)) ? candidate.vote_count : '?' }}
+                  </span>
                   <span class="text-sm text-gray-500">votes</span>
                 </div>
               </div>
             </div>
 
             <!-- Right: Single chart per position -->
-            <div  class="col-span-2">
+            <div class="col-span-2">
               <div class="h-92">
                 <Chart
                   type="bar"
@@ -95,11 +110,13 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useVoteStore } from '../../../stores/votes'
+import { useElectionStore } from '../../../stores/elections'
 import ExportResults from './ExportResults.vue'
 import { useAuthStore } from '../../../stores/auth'
 import Chart from 'primevue/chart'
 
 const authStore = useAuthStore()
+const electionStore = useElectionStore()
 
 const props = defineProps({
   electionId: {
@@ -116,50 +133,53 @@ const positions = ref([])
 const loading = ref(true)
 const error = ref(null)
 const electionName = ref('Election Results')
-
+const election = ref(null)
 const resolvedElectionId = computed(() => props.electionId || route.params.id)
 
 const loadStats = async () => {
   try {
-    loading.value = true
-    error.value = null
-    // Fetch vote statistics
-    const data = await voteStore.getVoteStatistics(resolvedElectionId.value)
-    positions.value = Array.isArray(data) ? data : []
+    loading.value = true;
+    error.value = null;
     
-    // Fetch election details to get the name
+    // Fetch vote statistics
+    const data = await voteStore.getVoteStatistics(resolvedElectionId.value);
+    positions.value = Array.isArray(data) ? data : [];
+    
+    // Fetch election details using the correct store method
     try {
-      const election = await voteStore.getElectionDetails(resolvedElectionId.value)
-      if (election && election.name) {
-        electionName.value = election.name
+      const { data: electionData, error: electionError } = await electionStore.getElectionById(resolvedElectionId.value);
+      
+      if (electionError) throw electionError;
+      
+      if (electionData) {
+        electionName.value = electionData.name || 'Election Results';
+        election.value = electionData;
+        console.log('Election data loaded:', election.value);
       }
     } catch (e) {
-      console.warn('Could not fetch election details:', e)
-      // Use default name if fetch fails
-      electionName.value = 'Election Results'
+      console.warn('Could not fetch election details:', e);
+      electionName.value = 'Election Results';
     }
   } catch (e) {
-    console.error('Failed to load results:', e)
-    error.value = e?.message || 'Failed to load results'
+    console.error('Failed to load results:', e);
+    error.value = e?.message || 'Failed to load results';
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
-
+};
 const sortedCandidates = (cands) => {
   return [...(cands || [])].sort((a, b) => (b.vote_count || 0) - (a.vote_count || 0))
 }
 
-const goBack = () => {
-  router.push(`/elections/${resolvedElectionId.value}`)
-}
+console.log('election',election.value)
 
 onMounted(loadStats)
 
 // Chart helpers
 const getChartData = (position) => {
   const sorted = [...(position?.candidates || [])].sort((a, b) => (b.vote_count || 0) - (a.vote_count || 0))
-  const labels = sorted.map(c => c.name || `#${c.id}`)
+  const showNames = authStore.isAdmin || (election.value && electionStore.isElectionEnded(election.value))
+  const labels = sorted.map(c => showNames ? (c.name || `#${c.id}`) : 'Candidate')
   const data = sorted.map(c => c.vote_count || 0)
 
   return {
@@ -185,7 +205,9 @@ const getChartOptions = () => {
       legend: { display: false },
       tooltip: {
         callbacks: {
-          label: (ctx) => `${ctx.parsed.y} vote${ctx.parsed.y === 1 ? '' : 's'}`
+          label: (ctx) => {
+            return `${ctx.parsed.y} vote${ctx.parsed.y === 1 ? '' : 's'}`
+          }
         }
       }
     },
