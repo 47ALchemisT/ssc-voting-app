@@ -69,9 +69,9 @@
     <div class="border-t border-gray-100 p-4 mt-auto space-y-2">
       <!-- User Info -->
       <div class="w-full p-3 bg-white border border-gray-200 rounded-lg">
-        <div class="flex justify-between items-start">
-          <div class="">
-            <div class="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden bg-blue-700">
+        <div class="flex items-start gap-3">
+          <div class="flex-shrink-0">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden bg-blue-700">
               <img
                 v-if="authStore.profile?.avatar_url"
                 :src="authStore.profile.avatar_url"
@@ -82,30 +82,30 @@
                 {{ authStore.profile?.first_name?.charAt(0)?.toUpperCase() || 'U' }}
               </span>
             </div>
-            <transition name="fade">
-              <div v-if="!collapsed" class="mt-2 overflow-hidden">
-                <div class="flex items-center">
-                  <span class="font-semibold text-gray-900 capitalize truncate">
-                    {{ authStore.profile?.first_name || authStore.user?.email?.split('@')[0] || 'User' }}
-                    {{ authStore.profile?.last_name ? ' ' + authStore.profile.last_name.charAt(0) + '.' : '' }}
-                  </span>
-                  <span 
-                    class="text-xs rounded-full font-medium px-2 py-1 ml-2 whitespace-nowrap"
-                    :class="{
-                      'bg-blue-100 text-blue-700': !authStore.isAdmin && !authStore.isCandidate,
-                      'bg-red-100 text-red-700': authStore.isAdmin,
-                      'bg-green-100 text-green-700': authStore.isCandidate
-                    }"
-                  >
-                    {{ authStore.isAdmin ? 'Admin' : authStore.isCandidate ? 'Candidate' : 'User' }}
-                  </span>
-                </div>
-                <div class="text-xs truncate mt-1 text-gray-500">
-                  {{ authStore.user?.email || '' }}
-                </div>
-              </div>
-            </transition>
           </div>
+          <transition name="fade">
+            <div v-if="!collapsed" class="min-w-0 flex-1">
+              <div class="flex items-center min-w-0">
+                <span class="font-semibold text-gray-900 capitalize truncate">
+                  {{ authStore.profile?.first_name || authStore.user?.email?.split('@')[0] || 'User' }}
+                  {{ authStore.profile?.last_name ? ' ' + authStore.profile.last_name.charAt(0) + '.' : '' }}
+                </span>
+                <span 
+                  class="flex-shrink-0 text-xs rounded-full font-medium px-2 py-1 ml-2 whitespace-nowrap"
+                  :class="{
+                    'bg-blue-100 text-blue-700': !authStore.isAdmin && !authStore.isCandidate,
+                    'bg-red-100 text-red-700': authStore.isAdmin,
+                    'bg-green-100 text-green-700': authStore.isCandidate
+                  }"
+                >
+                  {{ authStore.isAdmin ? 'Admin' : authStore.isCandidate ? 'Candidate' : 'User' }}
+                </span>
+              </div>
+              <div class="text-xs text-gray-500 truncate">
+                {{ authStore.user?.email || '' }}
+              </div>
+            </div>
+          </transition>
         </div>
       </div>
 

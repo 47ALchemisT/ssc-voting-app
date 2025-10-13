@@ -43,12 +43,6 @@
         icon="pi pi-sign-in"
         :label="loading ? 'Signing in...' : 'Sign In'"
       />
-      <div class="text-end">
-        <NuxtLink to="/forgot-password" class="text-blue-600 text-sm hover:underline">
-          Forgot Password?
-        </NuxtLink>
-      </div>
-
 
       <!-- Error -->
       <div v-if="error" class="text-red-600 text-sm text-center">
@@ -56,10 +50,30 @@
       </div>
     </form>
 
+    <!-- Divider -->
+    <div class="relative my-6">
+      <div class="absolute inset-0 flex items-center">
+        <div class="w-full border-t border-gray-300"></div>
+      </div>
+      <div class="relative flex justify-center text-sm">
+        <span class="px-2 bg-white text-gray-500">Or continue with</span>
+      </div>
+    </div>
+
+    <Button 
+      @click="handleGoogleSignIn"
+      class="w-full flex items-center justify-center gap-2 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
+      :disabled="loading"
+    >
+      <img src="https://www.google.com/favicon.ico" alt="Google" class="w-5 h-5" />
+      <span>Continue with Google</span>
+    </Button>
+
+
     <!-- Footer links -->
     <div class="flex justify-center text-sm pt-4">
       <span>
-        Dont have an account yet?
+        Don't have an account yet?
         <NuxtLink to="/auth/sign-up" class="text-blue-600 hover:underline">
           Create Account
         </NuxtLink>
@@ -96,6 +110,18 @@ const handleSubmit = async () => {
     loading.value = false
   }
 }
+
+const handleGoogleSignIn = async () => {
+  try {
+    loading.value = true
+    await signInWithGoogle()
+  } catch (err) {
+    error.value = 'Google sign-in failed'
+  } finally {
+    loading.value = false
+  }
+}
+
 
 // const signInWithGoogle = async () => {
 //   try {

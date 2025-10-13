@@ -370,6 +370,57 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  // Sign in with Google
+  const signInWithGoogle = async () => {
+    try {
+      loading.value = true;
+      
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        },
+      });
+
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      console.error('Google sign-in error:', error);
+      return { data: null, error };
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const signUpWithGoogle = async () => {
+    try {
+      loading.value = true;
+
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        },
+      });
+
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      console.error('Google sign-up error:', error);
+      return { data: null, error };
+    } finally {
+      loading.value = false;
+    }
+  };
+
   return {
     user,
     users,
@@ -390,6 +441,8 @@ export const useAuthStore = defineStore('auth', () => {
     deactivateUser,
     checkInactiveStatus,
     changePassword,
-    activateUser
+    activateUser,
+    signInWithGoogle,
+    signUpWithGoogle
   }
 })

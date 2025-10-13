@@ -36,6 +36,18 @@ export const useAuth = () => {
     return data
   }
 
+  const signInWithGoogle = async () => {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`
+      }
+    })
+    if (error) throw error
+    return data
+  }
+
+
   // Use isAdmin from auth store
   const isAdmin = computed(() => authStore.isAdmin)
 
@@ -44,6 +56,7 @@ export const useAuth = () => {
     signIn,
     signOut,
     signUpWithGoogle,
+    signInWithGoogle,
     isAdmin
   }
 }

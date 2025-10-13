@@ -20,7 +20,7 @@ export default defineNuxtConfig({
     redirectOptions: {
       login: '/auth/login',
       callback: '/dashboard',
-      exclude: ['/', '/auth/sign-up']
+      exclude: ['/', '/auth/sign-up','/auth/callback']
     }
   },
   primevue: {
