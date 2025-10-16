@@ -15,9 +15,8 @@
       </div>
 
       <!-- Loading State -->
-      <div v-if="loading" class="text-center py-12">
-        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mx-auto"></div>
-        <p class="mt-2 text-gray-600">Loading positions...</p>
+      <div v-if="loading" class="py-6">
+        <Loader />
       </div>
 
       <!-- Error State -->
@@ -34,20 +33,6 @@
 
       <!-- Content -->
       <div v-else>
-        <!-- Empty State -->
-        <div v-if="positions.length === 0" class="bg-white rounded-lg border border-gray-200 p-8 text-center">
-          <div class="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-            <i class="pi pi-briefcase text-gray-400 text-2xl"></i>
-          </div>
-          <h3 class="text-lg font-medium text-gray-900 mb-1">No positions yet</h3>
-          <p class="text-gray-500 mb-6">Create your first position to get started.</p>
-          <Button
-            label="Add Position"
-            icon="pi pi-plus"
-            size="small"
-            @click="openNew"
-          />
-        </div>
 
         <!-- Positions DataTable -->
          <div class="p-1 rounded-lg border border-gray-200">
@@ -77,9 +62,33 @@
                 {{ data.max_candidate || '—' }}
               </template>
             </Column>
+            <Column header="Actions" style="width: 8rem;">
+              <template #body="{ data }">
+                <Button
+                  icon="pi pi-trash"
+                  severity="danger"
+                  size="small"
+                  text
+                  rounded
+                  @click="confirmDelete(data)"
+                />
+              </template>
+            </Column>
 
             <template #empty>
-              <div class="py-10 text-center text-gray-500">No positions found.</div>
+              <div class="p-8 text-center">
+                <div class="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                  <i class="pi pi-briefcase text-gray-400 text-2xl"></i>
+                </div>
+                <h3 class="text-lg font-medium text-gray-900 mb-1">No positions yet</h3>
+                <p class="text-gray-500 mb-6">Create your first position to get started.</p>
+                <Button
+                  label="Add Position"
+                  icon="pi pi-plus"
+                  size="small"
+                  @click="openNew"
+                />
+              </div>
             </template>
           </DataTable>
         </div>
@@ -164,6 +173,38 @@
         </template>
       </Dialog>
 
+      <!-- Delete Confirmation Dialog -->
+      <Dialog
+        v-model:visible="deleteDialog"
+        :style="{width: '450px'}"
+        header="Confirm Delete"
+        :modal="true"
+      >
+        <div class="flex items-start">
+          <i class="pi pi-exclamation-triangle text-red-500 text-2xl mr-3"></i>
+          <div>
+            <p class="mb-2">Are you sure you want to delete this position?</p>
+            <p class="font-semibold">{{ positionToDelete?.title }}</p>
+            <p class="text-sm text-gray-500 mt-2">This action cannot be undone.</p>
+          </div>
+        </div>
+        <template #footer>
+          <Button
+            label="Cancel"
+            severity="secondary"
+            size="small"
+            @click="deleteDialog = false"
+          />
+          <Button
+            label="Delete"
+            severity="danger"
+            size="small"
+            @click="handleDelete"
+            :loading="loading"
+          />
+        </template>
+      </Dialog>
+
     </div>
   </template>
   
@@ -178,6 +219,7 @@
   import DataTable from 'primevue/datatable';
   import Column from 'primevue/column';
   import AppBreadCrumbs from '~/components/AppBreadCrumbs.vue';
+  import Loader from '~/components/Loader.vue';
 
   definePageMeta({
     layout: 'dashboard-layout',
@@ -188,6 +230,8 @@
   const loading = ref(false);
   const error = ref(null);
   const positionDialog = ref(false);
+  const deleteDialog = ref(false);
+  const positionToDelete = ref(null);
   const submitted = ref(false);
   const home = ref({
       label: 'Dashboard',
@@ -259,6 +303,33 @@
     } catch (e) {
       console.error('Unexpected error:', e);
       error.value = 'Unexpected error adding position.';
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const confirmDelete = (position) => {
+    positionToDelete.value = position;
+    deleteDialog.value = true;
+  };
+
+  const handleDelete = async () => {
+    if (!positionToDelete.value) return;
+    
+    loading.value = true;
+    try {
+      const { error: deleteError } = await positionStore.deletePosition(positionToDelete.value.id);
+      
+      if (!deleteError) {
+        deleteDialog.value = false;
+        positionToDelete.value = null;
+      } else {
+        console.error('Error deleting position:', deleteError);
+        error.value = 'Failed to delete position. Please try again.';
+      }
+    } catch (e) {
+      console.error('Unexpected error:', e);
+      error.value = 'Unexpected error deleting position.';
     } finally {
       loading.value = false;
     }

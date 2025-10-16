@@ -1,16 +1,9 @@
 <template>
   <div class="flex h-screen">
-    <!-- Mobile Overlay -->
-    <div 
-      v-if="isMobileSidebarOpen"
-      class="fixed inset-0 bg-black/50 z-30 lg:hidden"
-      @click="toggleSidebar"
-    />
-
     <!-- Sidebar Component -->
-    <div class="relative z-40 h-screen">
-      <aside 
-        class="fixed lg:sticky top-0 left-0 h-screen transition-all duration-300 ease-in-out bg-gray-50"
+    <div class="relative z-40 h-screen overflow-hidden">
+      <aside
+        class="fixed lg:sticky top-0 left-0 h-screen transition-all duration-300 ease-in-out bg-gray-50 overflow-hidden"
         :class="{
           '-translate-x-full': isMobile ? !isMobileSidebarOpen : false,
           'translate-x-0': isMobile ? isMobileSidebarOpen : true,

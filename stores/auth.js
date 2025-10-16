@@ -248,21 +248,17 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       loading.value = true
       
-      // Get user profiles with auth data
-      const { data: profiles, error } = await supabase
-        .from('user_profile')
-        .select('*, colleges(college_name)')
-        .order('created_at', { ascending: false })
+      // Call database function to get users with emails from auth.users
+      const { data: profiles, error } = await supabase.rpc('get_users_with_emails')
       
       if (error) throw error
       
-      // Transform the data
+      // Transform the data to include colleges object structure
       const formattedUsers = profiles.map(profile => ({
         ...profile,
-        college_name: profile.colleges?.college_name || 'No college',
-        email: profile.email || 'No email', // This will be populated from the user object
+        colleges: profile.college_name ? { college_name: profile.college_name } : null,
+        email: profile.email || 'No email',
         last_sign_in: profile.last_sign_in_at,
-        created_at: profile.created_at
       }))
       
       users.value = formattedUsers

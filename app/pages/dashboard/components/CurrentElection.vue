@@ -9,22 +9,48 @@
                 Welcome{{ user?.first_name ? `, ${user.first_name}` : '' }}! {{ isAdmin ? 'Manage elections and view statistics' : 'View and participate in active elections' }}
             </p>
         </div>
-        <div v-if="currentElection">
-            <div class="grid gap-8 mt-4" :class="{ 'grid-cols-2': isAdmin, 'grid-cols-1': !isAdmin }">
+
+        <!-- Empty State - No Election -->
+        <div v-if="!currentElection" class="mt-6 bg-white rounded-lg border border-gray-200 p-12 text-center">
+            <div class="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                <i class="pi pi-calendar-times text-gray-400 text-4xl"></i>
+            </div>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">No current election found</h3>
+            <p class="text-gray-500 mb-6">There are no active elections at the moment.</p>
+            <NuxtLink 
+                v-if="isAdmin" 
+                to="/elections" 
+                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+            >
+                <i class="pi pi-plus mr-2"></i>
+                Create Election
+            </NuxtLink>
+        </div>
+
+        <div v-else>
+            <div class="grid gap-6 lg:gap-8 mt-6 lg:mt-8" :class="{ 'grid-cols-1 lg:grid-cols-2': isAdmin, 'grid-cols-1': !isAdmin }">
                 <!-- Left Column - Election Details -->
                 <div class="flex flex-col h-full">
                     <div class="flex-1">
-                        <div class="flex justify-between">
+                        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
                             <div>
-                                <h1 class="text-xs text-gray-500 font-semibold">Current Election</h1>
-                                <h1 class="text-xl font-semibold text-gray-800">{{ currentElection.title }}</h1>
+                                <h1 class="text-sm text-gray-500">Current Election</h1>
+                                <h1 class="text-xl lg:text-2xl font-semibold text-gray-800">{{ currentElection.title }}</h1>
                             </div>
-                            <Tag class="capitalize" :severity="currentElection.status === 'active' ? 'success' : 'warning'" :value="currentElection.status"/>
+                            <div class="flex-shrink-0">
+                                <Tag class="capitalize" rounded :severity="currentElection.status === 'active' ? 'success' : 'warning'" :value="currentElection.status"/>
+                            </div>
                         </div>
-                        <p class="text-gray-700 mt-2">{{ currentElection.description }}</p>
-                        <div class="mt-4 space-x-4 text-sm text-gray-500 flex">
-                            <span>Start: {{ formatDate(currentElection.start_date) }}</span>
-                            <span>End: {{ formatDate(currentElection.end_date) }}</span>
+                        <p class="text-gray-700 text-base lg:text-lg mt-2">{{ currentElection.description }}</p>
+                        <div class="mt-3 pt-3 border-t border-gray-200 flex flex-col sm:flex-row sm:space-x-4 space-y-2 sm:space-y-0 text-gray-500">
+                            <span class="flex items-center">
+                                <i class="pi pi-calendar mr-2"></i>
+                                Start: {{ formatDate(currentElection.start_date) }}
+                            </span>
+                            <span class="flex items-center">
+                                <i class="pi pi-calendar mr-2"></i>
+                                End: {{ formatDate(currentElection.end_date) }}
+                            </span>
                         </div>
                     </div>
                     
@@ -36,56 +62,64 @@
                         </div>
                         <div v-else class="flex items-start">
                             <div class="flex-shrink-0">
-                                <i v-if="hasVoted" class="pi pi-check-circle text-2xl text-green-600 mr-3 mt-0.5"></i>
-                                <i v-else class="pi pi-exclamation-circle text-2xl text-blue-600 mr-3 mt-0.5"></i>
+                                <i v-if="hasVoted" class="pi pi-check-circle text-xl lg:text-2xl text-green-600 mr-3 mt-0.5"></i>
+                                <i v-else class="pi pi-exclamation-circle text-xl lg:text-2xl text-blue-600 mr-3 mt-0.5"></i>
                             </div>
-                            <div>
-                                <h3 class="font-medium" :class="hasVoted ? 'text-green-800' : 'text-blue-800'">
+                            <div class="w-full">
+                                <h3 class="font-medium text-sm lg:text-base" :class="hasVoted ? 'text-green-800' : 'text-blue-800'">
                                     {{ hasVoted ? 'You have already voted' : 'Your vote is pending' }}
                                 </h3>
-                                <p v-if="!hasVoted" class="text-sm mt-1 text-blue-700">
-                                    Don't forget to cast your vote before {{ formatDate(currentElection.end_date) }}
-                                </p>
+                                <div v-if="!hasVoted" class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mt-2">
+                                    <p class="text-sm text-blue-700 flex-1">Don't forget to cast your vote before {{ formatDate(currentElection.end_date) }}</p>
+                                    <Button
+                                        label="Cast Vote"
+                                        icon="pi pi-check-square"
+                                        size="small"
+                                        class="w-full sm:w-auto"
+                                        @click="$router.push(`/elections/${currentElection.id}`)"
+                                    />
+                                </div>
                                 <p v-else class="text-sm mt-1 text-green-700">
                                     Thank you for participating in this election!
                                 </p>
+
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Right Column - Admin Stats or User Info -->
-                <div v-if="isAdmin" class="grid grid-cols-2 gap-4">
+                <div v-if="isAdmin" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <!-- Admin Stats -->
-                    <div class="group bg-white rounded-lg border border-gray-200 p-6 transition-all duration-300 hover:border-blue-500">
+                    <div class="group bg-white rounded-lg border border-gray-200 p-4 lg:p-6 transition-all duration-300 hover:border-blue-500">
                         <div class="flex justify-between">
-                            <h1 class="font-regular text-gray-500 group-hover:text-blue-500 transition-colors duration-200">Total Candidates</h1>
+                            <h1 class="font-regular text-gray-500 group-hover:text-blue-500 transition-colors duration-200 text-sm lg:text-base">Total Candidates</h1>
                         </div>
-                        <h1 class="text-2xl mt-1 font-bold text-gray-800 group-hover:text-blue-600 transition-colors duration-200">
+                        <h1 class="text-xl lg:text-2xl mt-1 font-bold text-gray-800 group-hover:text-blue-600 transition-colors duration-200">
                             {{ candidates.length }}
                         </h1>
                     </div>
-                    <div class="group bg-white rounded-lg border border-gray-200 p-6 transition-all duration-300 hover:border-blue-500">
+                    <div class="group bg-white rounded-lg border border-gray-200 p-4 lg:p-6 transition-all duration-300 hover:border-blue-500">
                         <div class="flex justify-between">
-                            <h1 class="font-regular text-gray-500 group-hover:text-blue-500 transition-colors duration-200">Total Voters</h1>
+                            <h1 class="font-regular text-gray-500 group-hover:text-blue-500 transition-colors duration-200 text-sm lg:text-base">Total Voters</h1>
                         </div>
-                        <h1 class="text-2xl mt-1 font-bold text-gray-800 group-hover:text-blue-600 transition-colors duration-200">
+                        <h1 class="text-xl lg:text-2xl mt-1 font-bold text-gray-800 group-hover:text-blue-600 transition-colors duration-200">
                             {{ voters.length }}
                         </h1>
                     </div>
-                    <div class="group bg-white rounded-lg border border-gray-200 p-6 transition-all duration-300 hover:border-blue-500">
+                    <div class="group bg-white rounded-lg border border-gray-200 p-4 lg:p-6 transition-all duration-300 hover:border-blue-500">
                         <div class="flex justify-between">
-                            <h1 class="font-regular text-gray-500 group-hover:text-blue-500 transition-colors duration-200">Pending Approvals</h1>
+                            <h1 class="font-regular text-gray-500 group-hover:text-blue-500 transition-colors duration-200 text-sm lg:text-base">Pending Approvals</h1>
                         </div>
-                        <h1 class="text-2xl mt-1 font-bold text-gray-800 group-hover:text-blue-600 transition-colors duration-200">
+                        <h1 class="text-xl lg:text-2xl mt-1 font-bold text-gray-800 group-hover:text-blue-600 transition-colors duration-200">
                             {{ pendingCandidates.length }}
                         </h1>
                     </div>
-                    <div class="group bg-white rounded-lg border border-gray-200 p-6 transition-all duration-300 hover:border-blue-500">
+                    <div class="group bg-white rounded-lg border border-gray-200 p-4 lg:p-6 transition-all duration-300 hover:border-blue-500">
                         <div class="flex justify-between">
-                            <h1 class="font-regular text-gray-500 group-hover:text-blue-500 transition-colors duration-200">Positions</h1>
+                            <h1 class="font-regular text-gray-500 group-hover:text-blue-500 transition-colors duration-200 text-sm lg:text-base">Positions</h1>
                         </div>
-                        <h1 class="text-2xl mt-1 font-bold text-gray-800 group-hover:text-blue-600 transition-colors duration-200">
+                        <h1 class="text-xl lg:text-2xl mt-1 font-bold text-gray-800 group-hover:text-blue-600 transition-colors duration-200">
                             {{ positions.length }}
                         </h1>
                     </div>
@@ -162,9 +196,6 @@
                 </div>
             </div>
         </div>
-        <div v-else>
-            <p class="mt-4 text-gray-600">No current election found</p>
-        </div>
     </div>
 </template>
 <script setup>
@@ -202,7 +233,7 @@ const props = defineProps({
   }
 });
 
-console.log('current election id',props.currentElection.id);
+console.log('current election id', props.currentElection?.id);
 
 // Check if user has voted in the current election
 const checkVoteStatus = async () => {

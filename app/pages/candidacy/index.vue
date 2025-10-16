@@ -15,9 +15,8 @@
       />
     </div>
 
-    <div v-if="loading" class="text-center py-12">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mx-auto"></div>
-      <p class="mt-2 text-gray-600">Loading your applications...</p>
+    <div v-if="loading" class="text-center py-12">  
+      <Loader/>
     </div>
 
     <div v-else-if="error" class="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
@@ -147,6 +146,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useCandidacyApplicationStore } from '../../../stores/candidacy_application'
 import AppBreadCrumbs from '~/components/AppBreadCrumbs.vue'
+import Loader from '~/components/Loader.vue'
 
 const candidacyStore = useCandidacyApplicationStore()
 

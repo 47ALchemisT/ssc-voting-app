@@ -7,29 +7,86 @@
             @click="visible = true" 
             class="p-button-outlined"
         />
-        <Dialog v-model:visible="visible" modal header="Settings" :style="{ width: '30rem' }">
+        <Dialog v-model:visible="visible" :draggable="false" modal header="Settings" :style="{ width: '30rem' }">
             <div class="grid grid-cols-1 gap-3">
+                <div v-if="election.status !== 'ongoing'">
+                    <div>
+                        <!--note, settings disabled if status is not ongoing-->
+                        <p class="p-3 bg-blue-50 text-sm text-blue-500 flex items-center gap-2 rounded-md">
+                            <i class="pi pi-info-circle"></i>
+                            Settings are disabled because the election is not ongoing.
+                        </p>
+                    </div>
+                </div>
                 <div 
-                    class="flex bg-gray-100 py-3 px-4 rounded-md justify-between gap-10 group hover:bg-blue-100 cursor-pointer transition-colors transition-duration-300"
-                    @click="openExtendDialog"
+                    :class="[
+                        'flex py-3 px-4 rounded-md justify-between gap-10 transition-colors transition-duration-300',
+                        election.status === 'ongoing' 
+                            ? 'bg-gray-100 group hover:bg-blue-100 cursor-pointer' 
+                            : 'bg-gray-50 opacity-50 cursor-not-allowed'
+                    ]"
+                    @click="election.status === 'ongoing' ? openExtendDialog() : null"
                 >
                     <div>
-                        <h1 class="text-md text-gray-800 font-medium group-hover:text-blue-600 transition-colors transition-duration-300">Extend Election Duration</h1>
-                        <p class="text-sm text-gray-600 group-hover:text-blue-600 transition-colors transition-duration-300">Extend the duration of the election by a specified number of days.</p>
+                        <h1 
+                            :class="[
+                                'text-md font-medium transition-colors transition-duration-300',
+                                election.status === 'ongoing' ? 'text-gray-800 group-hover:text-blue-600' : 'text-gray-400'
+                            ]"
+                        >
+                            Extend Election Duration
+                        </h1>
+                        <p 
+                            :class="[
+                                'text-sm transition-colors transition-duration-300',
+                                election.status === 'ongoing' ? 'text-gray-600 group-hover:text-blue-600' : 'text-gray-400'
+                            ]"
+                        >
+                            Extend the duration of the election by a specified number of days.
+                        </p>
                     </div>
-                    <div class="group-hover:text-blue-600 transition-colors transition-duration-300">
+                    <div 
+                        :class="[
+                            'transition-colors transition-duration-300',
+                            election.is_current === 1 ? 'group-hover:text-blue-600' : 'text-gray-400'
+                        ]"
+                    >
                         <i class="pi pi-arrow-right"></i>
                     </div>
                 </div>
                 <div 
-                    class="flex bg-gray-100 py-3 px-4 rounded-md justify-between gap-10 group hover:bg-blue-100 cursor-pointer transition-colors transition-duration-300"
-                    @click="openForceEndDialog"
+                    :class="[
+                        'flex py-3 px-4 rounded-md justify-between gap-10 transition-colors transition-duration-300',
+                        election.status === 'ongoing' 
+                            ? 'bg-gray-100 group hover:bg-blue-100 cursor-pointer' 
+                            : 'bg-gray-50 opacity-50 cursor-not-allowed'
+                    ]"
+                    @click="election.status === 'ongoing' ? openForceEndDialog() : null"
                 >
                     <div>
-                        <h1 class="text-md text-gray-800 font-medium group-hover:text-blue-600 transition-colors transition-duration-300">Force End Election</h1>
-                        <p class="text-sm text-gray-600 group-hover:text-blue-600 transition-colors transition-duration-300">This will forcefully end the election even if the end date has not passed.</p>
+                        <h1 
+                            :class="[
+                                'text-md font-medium transition-colors transition-duration-300',
+                                election.status === 'ongoing' ? 'text-gray-800 group-hover:text-blue-600' : 'text-gray-400'
+                            ]"
+                        >
+                            Force End Election
+                        </h1>
+                        <p 
+                            :class="[
+                                'text-sm transition-colors transition-duration-300',
+                                election.status === 'ongoing' ? 'text-gray-600 group-hover:text-blue-600' : 'text-gray-400'
+                            ]"
+                        >
+                            This will forcefully end the election even if the end date has not passed.
+                        </p>
                     </div>
-                    <div class="group-hover:text-blue-600 transition-colors transition-duration-300">
+                    <div 
+                        :class="[
+                            'transition-colors transition-duration-300',
+                            election.is_current === 1 ? 'group-hover:text-blue-600' : 'text-gray-400'
+                        ]"
+                    >
                         <i class="pi pi-arrow-right"></i>
                     </div>
                 </div>

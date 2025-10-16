@@ -38,11 +38,25 @@ export const usePositionStore = defineStore('positions', () => {
         }
     }
 
+    const deletePosition = async (id) => {
+        try{
+            const {error} = await supabase.from('positions').delete().eq('id',id);
+            if(!error){
+                positions.value = positions.value.filter(position => position.id !== id);
+            }
+            return {error};
+        }catch(e){
+            console.log(e);
+            return {error:e};
+        }
+    }
+
     return {
         positions,
         loading,
         error,
         getPositions,
-        addPosition
+        addPosition,
+        deletePosition
     }
 })

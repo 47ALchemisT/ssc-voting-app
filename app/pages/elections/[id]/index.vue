@@ -1,9 +1,8 @@
 <template>
   <div class="space-y-6">
     <!-- Loading State -->
-    <div v-if="loading" class="text-center py-12">
-      <i class="pi pi-spin pi-spinner text-2xl text-blue-500"></i>
-      <p class="mt-2 text-gray-600">Loading election details...</p>
+    <div v-if="loading" class="p-6">
+      <Loader />
     </div>
 
     <!-- Error State -->
@@ -17,19 +16,19 @@
     <!-- Election Details -->
     <div v-else-if="election" class="space-y-6">
       <AppBreadCrumbs :home="home" :items="items"/>
-      <div class="grid grid-cols-5 gap-4">
+      <div class="grid grid-cols-1 lg:grid-cols-5 gap-4 lg:gap-6">
         <!-- Election Information -->
-        <InfoCard class="col-span-3">
+        <InfoCard class="col-span-1 lg:col-span-3">
           <template #header>
-            <div class="flex justify-between">
+            <div class="flex flex-col sm:flex-row sm:justify-between gap-2">
               <h3 class="font-medium text-gray-800">Election Details</h3>
-              <div class="flex gap-2">
+              <div class="flex flex-wrap gap-2">
                 <StartElectionDialog
                   v-if="election.status === 'upcoming' && authStore.isAdmin"
                   :election="election"
                   @confirm="startElection"
                 />
-                <VoteEligibilityModal 
+                <VoteEligibilityModal
                   v-if="election.status === 'ongoing'"
                   :election-id="election.id"
                   :is-voting-period="isVotingPeriod"
@@ -41,77 +40,84 @@
                   :election="election"
                   @confirm="endElection"
                 />
-                <ElectionSettingsDialog 
-                  v-if="election.status === 'upcoming' || election.status === 'ongoing' && authStore.isAdmin"
+                <ElectionSettingsDialog
+                  v-if="election.status === 'upcoming' && authStore.isAdmin"
                   :election="election"
                   @extended="fetchElection"
                 />
               </div>
             </div>
           </template>
-          <div class="flex justify-between">
-            <div>
-              <h4 class="text-xs font-medium text-gray-600 uppercase">Title</h4>
-              <p class="text-gray-800 text-md font-medium mt-1">{{ election.title }}</p>
+          <div class="space-y-4">
+            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
+              <div class="flex-1">
+                <h4 class="text-xs font-medium text-gray-600 uppercase">Title</h4>
+                <p class="text-gray-800 text-lg font-medium mt-1 break-words">{{ election.title }}</p>
+              </div>
+              <div class="flex-shrink-0">
+                <Tag class="text-sm capitalize">{{ election.status }}</Tag>
+              </div>
             </div>
             <div>
-              <Tag class="text-xs capitalize">{{ election.status }}</Tag>
+              <h4 class="text-xs font-medium text-gray-600 uppercase">Description</h4>
+              <p class="text-gray-800 text-sm mt-1 text-justify leading-relaxed">{{ election.description }}</p>
             </div>
-          </div>
-          <div class="mt-4">
-            <h4 class="text-xs font-medium text-gray-600 uppercase">Description</h4>
-            <p class="text-gray-800 text-sm mt-1 text-justify">{{ election.description }}</p>
-          </div>
-          <div class="mt-4">
-            <h4 class="text-xs font-medium text-gray-600 uppercase">Schedule</h4>
             <div>
-              <div class="flex gap-4 text-sm mt-1 text-gray-800">
-                <div>
-                  <i class="pi pi-calendar-clock mt-1"></i>
-                  {{ formatDate(election.start_date) }}
-                </div>
-                <div> - </div>
-                <div>
-                  <i class="pi pi-calendar-clock mt-1"></i>
-                  {{ formatDate(election.end_date) }}
+              <h4 class="text-xs font-medium text-gray-600 uppercase">Schedule</h4>
+              <div class="mt-1">
+                <div class="flex flex-col sm:flex-row sm:gap-4 gap-2 text-sm text-gray-800">
+                  <div class="flex items-center">
+                    <i class="pi pi-calendar-clock mr-2 text-gray-500"></i>
+                    {{ formatDate(election.start_date) }}
+                  </div>
+                  <div class="hidden sm:block text-gray-400">-</div>
+                  <div class="flex items-center">
+                    <i class="pi pi-calendar-clock mr-2 text-gray-500"></i>
+                    {{ formatDate(election.end_date) }}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-          <div class="mt-8 gap-3 space-x-3">
-            <Button
-              label="Voters List"
-              size="small"
-              variant="outlined"
-              icon="pi pi-list"
-              @click="navigateToVotersList"
-            />
-            <Button 
-              v-if="authStore.isAdmin"
-              label="Candidate Applicants" 
-              icon="pi pi-users" 
-              outlined
-              size="small"
-              @click="navigateToCandidates"
-            />
-            <Button 
-              :label="electionStore.isElectionEnded(election) ? 'View Results' : 'View Summary'" 
-              icon="pi pi-chart-bar" 
-              size="small"
-              outlined
-              @click="navigateToResults"
-              v-tooltip.top="!electionStore.isElectionEnded(election) ? 'View current voting summary' : 'View final election results'"
-            />
+            <div class="pt-4 border-t border-gray-200">
+              <div class="flex flex-col sm:flex-row gap-2">
+                <Button
+                  label="Voters List"
+                  size="small"
+                  variant="outlined"
+                  icon="pi pi-list"
+                  class="w-full sm:w-auto"
+                  @click="navigateToVotersList"
+                />
+                <Button
+                  v-if="authStore.isAdmin"
+                  label="Candidate Applicants"
+                  icon="pi pi-users"
+                  outlined
+                  size="small"
+                  class="w-full sm:w-auto"
+                  @click="navigateToCandidates"
+                />
+                <Button
+                  :label="electionStore.isElectionEnded(election) ? 'View Results' : 'View Summary'"
+                  icon="pi pi-chart-bar"
+                  size="small"
+                  outlined
+                  class="w-full sm:w-auto"
+                  @click="navigateToResults"
+                  v-tooltip.top="!electionStore.isElectionEnded(election) ? 'View current voting summary' : 'View final election results'"
+                />
+              </div>
+            </div>
           </div>
         </InfoCard>
-        <InfoCard class="h-full col-span-2">
+        <InfoCard class="col-span-1 lg:col-span-2">
           <template #header>
             <div class="flex justify-between items-center">
               <h3 class="font-medium text-gray-800">Vote Statistics</h3>
-              <Button 
-                icon="pi pi-sync" 
-                text 
-                rounded 
+              <Button
+                icon="pi pi-sync"
+                text
+                rounded
                 size="small"
                 :loading="refreshingStats"
                 @click="refreshStatistics"
@@ -161,6 +167,7 @@ import StartElectionDialog from '~/components/election/StartElectionDialog.vue';
 import EndElectionDialog from '~/components/election/EndElectionDialog.vue';
 import ElectionSettingsDialog from '~/components/election/ElectionSettingsDialog.vue'
 import AppBreadCrumbs from '~/components/AppBreadCrumbs.vue'
+import Loader from '~/components/Loader.vue'
 
 definePageMeta({
   middleware: 'auth',

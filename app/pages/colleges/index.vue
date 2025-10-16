@@ -9,9 +9,8 @@
 
       <!-- Fallback slot (loading state) -->
       <template #fallback>
-        <div class="flex justify-center items-center h-64">
-          <i class="pi pi-spin pi-spinner text-2xl text-blue-500"></i>
-          <span class="ml-2">Loading colleges...</span>
+        <div class="p-6">
+          <Loader />
         </div>
       </template>
     </Suspense>
@@ -20,6 +19,7 @@
   
 <script setup>
 import CollegeList from './component/college-list.vue'
+import Loader from '~/components/Loader.vue'
 definePageMeta({
     middleware: 'auth',
     layout: 'dashboard-layout'

@@ -1,7 +1,7 @@
 <template>
     <div>
         <AppBreadCrumbs :home="home" :items="items" />
-        <ElectionResults />
+        <ElectionResults class="pt-2"/>
     </div>
 </template>
 

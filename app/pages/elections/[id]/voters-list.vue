@@ -12,7 +12,7 @@
             <div class="flex justify-between gap-2">
               <IconField>
                   <InputIcon class="pi pi-search" />
-                  <InputText v-model="value1" placeholder="Search" size="small" />
+                  <InputText v-model="searchTerm" placeholder="Search" size="small" />
               </IconField>
               <Button 
                   v-if="authStore.isAdmin"
@@ -25,7 +25,7 @@
         </div>
     </div>
 
-    <div class="rounded-lg border border-gray-200 overflow-hidden">
+    <div class="rounded-lg border border-gray-200 mb-8 overflow-hidden">
         <DataTable 
           :value="filteredVoters"
           :paginator="true"
@@ -58,12 +58,35 @@
               {{ data.school_id || '-' }}
             </template>
           </Column>
+          <template #empty>
+            <div class="flex flex-col items-center justify-center py-12 text-gray-500">
+              <i class="pi pi-users text-4xl mb-4 text-gray-300"></i>
+              <p class="text-lg font-medium mb-2">
+                {{ searchTerm ? 'No voters found' : 'No voters yet' }}
+              </p>
+              <p class="text-sm text-center max-w-md">
+                {{ searchTerm 
+                  ? 'Try adjusting your search terms or clearing the search to see all voters.' 
+                  : 'No voters have been added to this election yet. Import a voters list to get started.' 
+                }}
+              </p>
+              <Button 
+                v-if="!searchTerm && authStore.isAdmin"
+                label="Import Voters"
+                icon="pi pi-upload"
+                @click="showImportDialog = true"
+                class="mt-4"
+                size="small"
+              />
+            </div>
+          </template>
         </DataTable>
     </div>
     <ImportVotersDialog 
       v-model:visible="showImportDialog"
       :election-id="electionId"
       @imported="fetchVoters"
+      class="m-6 sm:m-0"
     />
   </div>
 </template>

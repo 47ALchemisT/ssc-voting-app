@@ -2,6 +2,7 @@
   <Dialog
     v-model:visible="localVisible"
     modal
+    :draggable="false"
     header="Create Election"
     :style="{ width: '30rem' }"
     @hide="resetForm"

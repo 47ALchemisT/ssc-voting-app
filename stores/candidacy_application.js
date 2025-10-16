@@ -278,10 +278,10 @@ export const useCandidacyApplicationStore = defineStore('candidacyApplications',
         .from('elections')
         .select('*')
         .eq('is_current', 1)
-        .single()
+        .maybeSingle()
       
       if (electionError) throw electionError
-      if (!activeElection) return { data: [], error: 'No active election found' }
+      if (!activeElection) return { data: [], error: null }
       
       // Then get the applications for the current election
       const { data, error: err } = await supabase

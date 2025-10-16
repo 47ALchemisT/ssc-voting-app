@@ -3,9 +3,8 @@
 
 
     <!-- Loading State -->
-    <div v-if="loading" class="text-center py-8">
-      <i class="pi pi-spin pi-spinner text-2xl text-blue-500"></i>
-      <p class="mt-2 text-gray-600">Loading elections...</p>
+    <div v-if="loading" class="p-6">
+      <Loader />
     </div>
 
     <!-- Error State -->
@@ -50,24 +49,23 @@
         <div v-if="currentElection" class="space-y-3">
           <h4 class="text-sm font-medium text-gray-700">Current Election</h4>
           <div class="p-4 rounded-lg border border-blue-200 bg-blue-50/50">
-            <div class="flex justify-between items-start">
-              <div>
-                <div class="flex items-center gap-2">
-                  <span class="font-medium text-blue-800">{{ currentElection.title }}</span>
-                  <span class="px-2 py-0.5 mt-3 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
-                    Current Election
-                  </span>
+            <div class="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4">
+              <div class="flex-1">
+                <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+                  <span class="font-medium text-xl text-blue-800">{{ currentElection.title }}</span>
                 </div>
-                <p class="text-sm text-blue-700 mt-1">{{ currentElection.description }}</p>
-                <div class="text-xs mt-3 font-medium text-blue-600">
+                <p class="text-md text-blue-700 mt-1">{{ currentElection.description }}</p>
+                <div class="text-xs mt-3 flex items-center gap-2 font-medium text-blue-600">
+                  <i class="pi pi-calendar"></i>
                   {{ formatDateRange(currentElection.start_date, currentElection.end_date) }}
                 </div>
               </div>
-              <div class="flex gap-2">
+              <div class="flex gap-2 lg:flex-shrink-0">
                 <NuxtLink :to="`/elections/${currentElection.id}`">
                   <Button label="View" icon="pi pi-eye" outlined size="small" />
                 </NuxtLink>
                 <Button 
+                  v-if="currentElection.is_current !== 1"
                   label="Results" 
                   icon="pi pi-chart-bar" 
                   outlined 
@@ -88,15 +86,15 @@
               :key="election.id"
               class="p-4 rounded-lg border border-gray-200 bg-white bg-gray-50/50"
             >
-              <div class="flex justify-between gap-10">
-                <div>
+              <div class="flex flex-col lg:flex-row lg:justify-between gap-4">
+                <div class="flex-1">
                   <div class="font-medium text-gray-800">{{ election.title }}</div>
                   <p class="text-sm text-gray-600 mt-3">{{ election.description }}</p>
                   <div class="text-xs font-medium mt-3 text-gray-500">
                     {{ formatDateRange(election.start_date, election.end_date) }}
                   </div>
                 </div>
-                <div class="flex gap-2">
+                <div class="flex gap-2 lg:flex-shrink-0">
                   <NuxtLink :to="`/elections/${election.id}`">
                     <Button label="View" icon="pi pi-eye" outlined size="small" />
                   </NuxtLink>
@@ -137,6 +135,7 @@ import CreateElectionModal from "./components/create.vue"
 import { useElectionStore } from '../../../stores/elections'
 import { useAuthStore } from '../../../stores/auth'
 import AppBreadCrumbs from '~/components/AppBreadCrumbs.vue'
+import Loader from '~/components/Loader.vue'
 
 definePageMeta({
   middleware: 'auth',

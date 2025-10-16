@@ -8,7 +8,7 @@
       @updated="handleApplicationsUpdated"
     />
     
-    <div class="flex justify-between mb-4">
+    <div class="flex justify-between pt-4 mb-4">
       <div>
         <h1 class="text-lg font-medium text-gray-800">Candidates for {{ electionTitle }}</h1>
         <p class="text-sm text-gray-500">List below are approved canndidates for this election</p>
@@ -26,15 +26,15 @@
       </div>
     </div>
 
-    <div v-if="loading" class="flex justify-content-center p-4">
-      <ProgressSpinner />
+    <div v-if="loading" class="p-6">
+      <Loader />
     </div>
 
     <div v-else-if="error" class="p-error">
       {{ error }}
     </div>
 
-    <div class="election-candidates p-1 border border-gray-200 rounded-lg">
+    <div v-if="!loading && !error" class="election-candidates p-1 border border-gray-200 rounded-lg">
       <div v-if="candidates.length === 0" class="text-center p-6 text-gray-500">
         <p>No candidates found for this election.</p>
         <Button 
@@ -116,6 +116,7 @@
 import { useCandidacyApplicationStore } from '../../../../stores/candidacy_application'
 import { useAuth } from '../../../../composables/useAuth'
 import AppBreadCrumbs from '~/components/AppBreadCrumbs.vue'
+import Loader from '~/components/Loader.vue'
 
 const candidacyApplicationStore = useCandidacyApplicationStore()
 const { isAdmin } = useAuth()

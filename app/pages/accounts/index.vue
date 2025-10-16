@@ -9,9 +9,8 @@
     </div>
 
     <!-- Loading State -->
-    <div v-if="loading" class="text-center py-12">
-      <i class="pi pi-spin pi-spinner text-2xl text-blue-500"></i>
-      <p class="mt-2 text-gray-600">Loading users...</p>
+    <div v-if="loading" class="p-6">
+      <Loader />
     </div>
 
     <!-- Error State -->
@@ -112,6 +111,12 @@
                 </div>
               </div>
             </div>
+          </template>
+        </Column>
+
+        <Column field="email" header="Email" :sortable="true">
+          <template #body="{ data }">
+            <div class="text-gray-700">{{ data.email || 'N/A' }}</div>
           </template>
         </Column>
 
@@ -228,6 +233,7 @@ import { useToast } from 'primevue/usetoast';
 import AppBreadCrumbs from '~/components/AppBreadCrumbs.vue';
 import InputText from 'primevue/inputtext';
 import Dropdown from 'primevue/dropdown';
+import Loader from '~/components/Loader.vue';
 
 definePageMeta({
     layout: 'dashboard-layout',
