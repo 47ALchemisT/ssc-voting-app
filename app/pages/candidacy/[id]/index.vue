@@ -99,6 +99,10 @@
                   <span class="text-gray-600">Position:</span>
                   <span class="font-medium">{{ application.position?.title || 'N/A' }}</span>
                 </div>
+                <div class="flex justify-between py-2">
+                  <span class="text-gray-600">Partylist:</span>
+                  <span class="font-medium">{{ application.partylists?.name || 'Independent' }}</span>
+                </div>
               </div>
             </div>
             <div v-if="authStore.isAdmin && shouldShowAdminActions" class="mt-6 pt-6 border-t border-gray-200">

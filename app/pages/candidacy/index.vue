@@ -54,7 +54,7 @@
           <div class="p-6">
             <div class="flex justify-between items-start">
               <div>
-                <h3 class="text-lg font-medium text-gray-900">{{ app.position }}</h3>
+                <h3 class="text-lg font-medium text-gray-900">{{ app.position?.title || 'Unknown Position' }}</h3>
                 <p class="text-sm text-gray-500 mt-1">
                   {{ app.election?.title || 'Unknown Election' }}
                   <span v-if="app.election" class="text-gray-400 text-xs ml-2">

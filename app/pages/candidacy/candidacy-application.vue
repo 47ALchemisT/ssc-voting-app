@@ -90,6 +90,23 @@
               <small v-if="errors.positionId" class="p-error">{{ errors.positionId }}</small>
             </div>
 
+            <!-- Partylist Selection -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Partylist</label>
+              <Dropdown
+                v-model="form.partylistId"
+                :options="[{ id: null, name: 'Independent' }, ...(partylistStore.partylists || [])]"
+                option-label="name"
+                option-value="id"
+                placeholder="Select a partylist"
+                class="w-full"
+                :class="{ 'p-invalid': errors.partylistId }"
+                :loading="partylistStore.loading"
+                :disabled="partylistStore.loading"
+              />
+              <small v-if="errors.partylistId" class="p-error">{{ errors.partylistId }}</small>
+            </div>
+
             <!-- Platform -->
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Your Platform</label>
@@ -352,6 +369,7 @@
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { usePartylistsStore } from '../../../stores/partylists'
 import { navigateTo } from '#imports'
 import { useAuthStore } from '../../../stores/auth'
 import { usePositionStore } from '../../../stores/positions'
@@ -380,6 +398,7 @@ const route = useRoute()
 const authStore = useAuthStore()
 const positionStore = usePositionStore()
 const electionStore = useElectionStore()
+const partylistStore = usePartylistsStore()
 const applicationStore = useCandidacyApplicationStore()
 const toast = useToast()
 
@@ -432,6 +451,7 @@ const loadPositions = async () => {
 const form = ref({
   electionId: null,
   positionId: null,
+  partylistId: null,
   platform: '',
   gradeSlip: null,
   activityCertificate: null,
@@ -476,46 +496,43 @@ const removeFile = (field) => {
 }
 
 const validateForm = () => {
-  let isValid = true
-  errors.value = {}
+  const newErrors = {}
   
   if (!form.value.electionId) {
-    errors.value.electionId = 'Please select an election'
-    isValid = false
+    newErrors.electionId = 'Please select an election'
   }
   
   if (!form.value.positionId) {
-    errors.value.positionId = 'Please select a position'
-    isValid = false
+    newErrors.positionId = 'Please select a position'
+  }
+  
+  if (!form.value.partylistId) {
+    newErrors.partylistId = 'Please select a partylist'
   }
   
   if (!form.value.platform?.trim()) {
-    errors.value.platform = 'Please provide your platform'
-    isValid = false
+    newErrors.platform = 'Please provide your platform'
   }
   
   // Required documents validation
   if (!form.value.gradeSlip) {
-    errors.value.gradeSlip = 'Grade slip is required'
-    isValid = false
+    newErrors.gradeSlip = 'Grade slip is required'
   }
   
   if (!form.value.activityCertificate) {
-    errors.value.activityCertificate = 'Activity certificate is required'
-    isValid = false
+    newErrors.activityCertificate = 'Activity certificate is required'
   }
   
   if (!form.value.candidacyCertificate) {
-    errors.value.candidacyCertificate = 'Certificate of candidacy is required'
-    isValid = false
+    newErrors.candidacyCertificate = 'Candidacy certificate is required'
   }
   
   if (!form.value.cor) {
-    errors.value.cor = 'Certificate of registration is required'
-    isValid = false
+    newErrors.cor = 'Certificate of Registration is required'
   }
   
-  return isValid
+  errors.value = newErrors
+  return Object.keys(newErrors).length === 0
 }
 
 const handleSubmit = async () => {
@@ -565,8 +582,9 @@ const onSuccessConfirm = () => {
   navigateTo('/dashboard')
 }
 
-onMounted(() => {
-  fetchElections()
-  loadPositions()
+onMounted(async () => {
+  await fetchElections()
+  await loadPositions()
+  await partylistStore.fetchPartylists()
 })
 </script>

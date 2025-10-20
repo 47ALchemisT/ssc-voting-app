@@ -124,6 +124,7 @@ export const useCandidacyApplicationStore = defineStore('candidacyApplications',
             user_id: userProfile.id,
             election_id: formData.electionId,
             position_id: formData.positionId,
+            partylists_id: formData.partylistId,
             platform: formData.platform || null,
             status: STATUS.PENDING,
             applied_at: new Date().toISOString(),
@@ -196,7 +197,8 @@ export const useCandidacyApplicationStore = defineStore('candidacyApplications',
           *,
           election:elections(*),
           position:position_id(*),
-          user:user_profile(*)
+          user:user_profile(*),
+          partylists:partylists_id(*)
         `)
         .eq('id', id)
         .single()
@@ -232,7 +234,8 @@ export const useCandidacyApplicationStore = defineStore('candidacyApplications',
         .select(`
           *,
           user:user_profile(*),
-          position:positions(*)
+          position:positions(*),
+          partylists:partylists_id(*)
         `)
         .eq('election_id', electionId)
         .order('created_at', { ascending: false })
@@ -289,7 +292,9 @@ export const useCandidacyApplicationStore = defineStore('candidacyApplications',
         .select(`
           *,
           election:elections(*),
-          user:user_profile(*)
+          user:user_profile(*),
+          position:positions(*),
+          partylists:partylists_id(*)
         `)
         .eq('user_id', userProfile.id)
         .eq('election_id', activeElection.id)

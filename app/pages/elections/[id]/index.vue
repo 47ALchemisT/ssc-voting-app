@@ -296,10 +296,12 @@ const fetchCandidates = async () => {
       name: `${candidate.user?.first_name || ''} ${candidate.user?.last_name || ''}`.trim() || 'Unknown Candidate',
       position: candidate.position || { id: candidate.position_id, title: candidate.position_name || 'Unknown Position' },
       position_id: candidate.position_id,
-      party: candidate.party || 'Independent',
+      party: candidate.partylists?.name || 'Independent',
+      partylist: candidate.partylists, // Include the full partylist object
       platform: candidate.platform || 'No platform information available',
       photo: candidate.user?.avatar_url || 'https://via.placeholder.com/150',
-      user: candidate.user // Keep the full user object if needed
+      user: candidate.user, // Keep the full user object if needed
+      created_at: candidate.created_at // Include created_at if needed
     }))
     
   } catch (err) {

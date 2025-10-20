@@ -45,8 +45,15 @@
                    class="bg-gray-100" />
             <div>
               <div class="font-medium">{{ data.name }}</div>
-              <div class="text-sm text-gray-500">{{ data.party || 'Independent' }}</div>
             </div>
+          </div>
+        </template>
+      </Column>
+
+      <Column field="party" header="Party" style="min-width: 250px">
+        <template #body="{ data }">
+          <div class="line-clamp-2">
+            {{ data.partylist?.name || 'Independent' }}
           </div>
         </template>
       </Column>
@@ -90,6 +97,9 @@ const props = defineProps({
     default: false
   }
 });
+
+console.log('flattenedCandidates', props.flattenedCandidates);
+console.log('groupedCandidates', props.groupedCandidates);
 
 const emit = defineEmits(['view-candidate']);
 
