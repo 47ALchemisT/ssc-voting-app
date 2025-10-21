@@ -69,15 +69,17 @@
                                 <h3 class="font-medium text-sm lg:text-base" :class="hasVoted ? 'text-green-800' : 'text-blue-800'">
                                     {{ hasVoted ? 'You have already voted' : 'Your vote is pending' }}
                                 </h3>
-                                <div v-if="!hasVoted" class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mt-2">
-                                    <p class="text-sm text-blue-700 flex-1">Don't forget to cast your vote before {{ formatDate(currentElection.end_date) }}</p>
+                                <div v-if="!hasVoted" class="mt-2">
+                                    <p v-if="!isAdmin" class="text-sm text-blue-700 mb-2">Don't forget to cast your vote before {{ formatDate(currentElection.end_date) }}</p>
                                     <Button
+                                        v-if="!isAdmin"
                                         label="Cast Vote"
                                         icon="pi pi-check-square"
                                         size="small"
                                         class="w-full sm:w-auto"
                                         @click="$router.push(`/elections/${currentElection.id}`)"
                                     />
+                                    <p v-else class="text-sm text-gray-600 italic">Administrators cannot cast votes in the election.</p>
                                 </div>
                                 <p v-else class="text-sm mt-1 text-green-700">
                                     Thank you for participating in this election!

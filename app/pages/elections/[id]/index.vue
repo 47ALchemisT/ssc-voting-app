@@ -29,7 +29,7 @@
                   @confirm="startElection"
                 />
                 <VoteEligibilityModal
-                  v-if="election.status === 'ongoing'"
+                  v-if="election.status === 'ongoing' && !authStore.isAdmin"
                   :election-id="election.id"
                   :is-voting-period="isVotingPeriod"
                   @eligible="onEligible"

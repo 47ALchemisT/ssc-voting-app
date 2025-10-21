@@ -308,7 +308,20 @@ export const useAuthStore = defineStore('auth', () => {
         return { error: 'No user is currently logged in' };
       }
 
-      // First, re-authenticate the user with their current password
+      // Check if user is authenticated via Google
+      const isGoogleAuth = user.value.app_metadata?.provider === 'google';
+      
+      // If user is authenticated via Google, we can directly update the password
+      if (isGoogleAuth) {
+        const { error: updateError } = await supabase.auth.updateUser({
+          password: newPassword
+        });
+
+        if (updateError) throw updateError;
+        return { error: null, message: 'Password updated successfully' };
+      }
+      
+      // For email/password users, verify current password first
       const { error: authError } = await supabase.auth.signInWithPassword({
         email: user.value.email,
         password: currentPassword
@@ -321,7 +334,7 @@ export const useAuthStore = defineStore('auth', () => {
         throw authError;
       }
 
-      // If re-authentication is successful, update the password
+      // Update the password
       const { error: updateError } = await supabase.auth.updateUser({
         password: newPassword
       });

@@ -94,7 +94,7 @@
           </div>
           
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">School Number</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">School ID</label>
             <InputText
               v-model="form.school_number"
               type="text"
@@ -208,14 +208,14 @@
     <!-- Change Password Dialog -->
     <Dialog 
       v-model:visible="showChangePasswordDialog" 
-      header="Change Password" 
+      :header="isGoogleUser ? 'Set New Password' : 'Change Password'" 
       :modal="true"
       :style="{ width: '450px' }"
       :closable="!changingPassword"
       :closeOnEscape="!changingPassword"
     >
       <div class="p-fluid">
-        <div class="field">
+        <div v-if="!isGoogleUser" class="field">
           <label for="currentPassword">Current Password</label>
           <Password 
             id="currentPassword" 
@@ -228,7 +228,7 @@
           />
         </div>
         <div class="field mt-4">
-          <label for="newPassword">New Password</label>
+          <label for="newPassword">{{ isGoogleUser ? 'New Password' : 'New Password' }}</label>
           <Password 
             id="newPassword" 
             v-model="passwordForm.newPassword" 
@@ -252,6 +252,10 @@
             @keyup.enter="changePassword"
           />
         </div>
+        <div v-if="isGoogleUser" class="text-sm text-gray-500 mt-2">
+          <i class="pi pi-info-circle mr-1"></i>
+          You're signed in with Google. You can set a new password to enable email/password login.
+        </div>
       </div>
       <template #footer>
         <Button 
@@ -262,7 +266,7 @@
           @click="showChangePasswordDialog = false" 
         />
         <Button 
-          label="Change Password" 
+          :label="isGoogleUser ? 'Set Password' : 'Change Password'" 
           icon="pi pi-check" 
           class="p-button-primary" 
           :loading="changingPassword"
@@ -276,6 +280,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import Dropdown from 'primevue/dropdown'
+import { useSupabaseUser } from '#imports'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import { useAuthStore } from '../../../stores/auth'
@@ -299,6 +304,12 @@ const items = ref([
 
 const authStore = useAuthStore()
 const toast = useToast()
+const user = useSupabaseUser()
+
+// Check if user is authenticated with Google
+const isGoogleUser = computed(() => {
+  return user.value?.app_metadata?.provider === 'google'
+})
 
 // Password change dialog state
 const showChangePasswordDialog = ref(false)
@@ -409,9 +420,12 @@ const changePassword = async () => {
       throw new Error('New password and confirm password do not match')
     }
     
+    // For Google users, we don't need the current password
+    const currentPassword = isGoogleUser.value ? undefined : passwordForm.value.currentPassword
+    
     // Call the changePassword method from the auth store
     const { error, message } = await authStore.changePassword(
-      passwordForm.value.currentPassword,
+      currentPassword,
       passwordForm.value.newPassword
     )
     
@@ -420,7 +434,7 @@ const changePassword = async () => {
     toast.add({
       severity: 'success',
       summary: 'Success',
-      detail: message || 'Password changed successfully',
+      detail: isGoogleUser.value ? 'Password set successfully. You can now log in with your email and password.' : 'Password changed successfully',
       life: 3000
     })
     
