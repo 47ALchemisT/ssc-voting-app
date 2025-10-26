@@ -149,7 +149,7 @@
                     {{ application.platform || 'No platform information provided' }}
                   </div>
                 </div>
-                <div>
+                <div v-if="authStore.isAdmin">
                   <h4 class="text-sm font-medium text-gray-500 mb-4">REQUIREMENTS</h4>
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <!-- Grade Slip Card -->

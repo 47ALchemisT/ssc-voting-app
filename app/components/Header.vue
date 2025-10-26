@@ -19,20 +19,8 @@
 
     <!-- Right: Actions -->
     <div class="flex items-center gap-4">
-      <!-- Notifications Button -->
-      <button
-        class="relative p-2 cursor-pointer rounded-full hover:bg-gray-100 transition-colors"
-        @click="$emit('toggleNotifications')"
-      >
-        <i class="pi pi-bell text-gray-600 text-lg"></i>
-        <!-- Badge -->
-        <span
-          v-if="notifications > 0"
-          class="absolute top-1 right-1 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full"
-        >
-          {{ notifications }}
-        </span>
-      </button>
+      <!-- Notifications -->
+      <Notification />
       <button 
         @click="$emit('toggle-sidebar')" 
         class="mr-3 p-2 rounded-full hover:bg-gray-100"
@@ -49,6 +37,7 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
+import Notification from './Notification.vue'
 
 const props = defineProps({
   sidebarOpen: {

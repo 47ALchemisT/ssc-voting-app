@@ -7,7 +7,7 @@
         <p class="text-gray-500 text-sm">View and manage your candidacy applications</p>
       </div>
       <Button
-        v-if="applications.length === 0"
+        v-if="applications.length === 0 && hasUpcomingElection"
         label="Apply for Candidacy"
         icon="pi pi-file-edit"
         size="small"
@@ -38,11 +38,15 @@
         <h3 class="text-lg font-medium text-gray-900 mb-1">No applications yet</h3>
         <p class="text-gray-500 mb-6">You haven't submitted any candidacy applications yet.</p>
         <Button
+          v-if="hasUpcomingElection"
           label="Apply for Candidacy"
           icon="pi pi-file-edit"
           size="small"
           @click="navigateToCandidacyApplication"
         />
+        <div v-else class="text-sm text-gray-500">
+          No upcoming elections available for candidacy applications.
+        </div>
       </div>
 
       <div v-else class="space-y-4">
@@ -145,14 +149,18 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useCandidacyApplicationStore } from '../../../stores/candidacy_application'
+import { useElectionStore } from '../../../stores/elections'
 import AppBreadCrumbs from '~/components/AppBreadCrumbs.vue'
 import Loader from '~/components/Loader.vue'
 
 const candidacyStore = useCandidacyApplicationStore()
+const electionStore = useElectionStore()
+const router = useRouter()
 
 const applications = ref([])
 const loading = ref(true)
-const error = ref(null)
+const error = ref('')
+const hasUpcomingElection = ref(false)
 
 const home = ref({
     label: 'Dashboard',
@@ -235,9 +243,25 @@ const handleCancelConfirmed = async () => {
   }
 }
 
+// Check for upcoming elections and fetch applications
+const checkUpcomingElections = async () => {
+  try {
+    const { data: elections } = await electionStore.getCurrentElections()
+    // Check if any election is upcoming (status = 'upcoming' or start_date is in the future)
+    const now = new Date()
+    hasUpcomingElection.value = elections.some(election => {
+      return election.status === 'upcoming' || new Date(election.start_date) > now
+    })
+  } catch (err) {
+    console.error('Error checking upcoming elections:', err)
+  } finally {
+    await fetchApplications()
+  }
+}
+
 // Fetch applications when component mounts
 onMounted(() => {
-  fetchApplications()
+  checkUpcomingElections()
 })
 
 definePageMeta({

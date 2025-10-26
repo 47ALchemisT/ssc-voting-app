@@ -41,7 +41,7 @@
                   @confirm="endElection"
                 />
                 <ElectionSettingsDialog
-                  v-if="election.status === 'upcoming' && authStore.isAdmin"
+                  v-if="(election.status === 'upcoming' || election.status === 'ongoing') && authStore.isAdmin"
                   :election="election"
                   @extended="fetchElection"
                 />
@@ -310,7 +310,7 @@ const fetchCandidates = async () => {
 }
 
 const viewCandidate = (candidateId) => {
-  console.log('View candidate:', candidateId);
+  router.push(`/candidacy/${candidateId}`);
 };
 
 const handleVotersImported = (result) => {

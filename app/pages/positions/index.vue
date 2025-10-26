@@ -62,16 +62,34 @@
                 {{ data.max_candidate || '—' }}
               </template>
             </Column>
-            <Column header="Actions" style="width: 8rem;">
+            <Column field="college_can_vote" header="College" style="width: 10rem;">
               <template #body="{ data }">
-                <Button
-                  icon="pi pi-trash"
-                  severity="danger"
-                  size="small"
-                  text
-                  rounded
-                  @click="confirmDelete(data)"
-                />
+                <span v-if="data.college">{{ data.college.alias || data.college.college_name }}</span>
+                <span v-else>All Colleges</span>
+              </template>
+            </Column>
+            <Column header="Actions" style="width: 10rem;">
+              <template #body="{ data }">
+                <div class="flex gap-2">
+                  <Button
+                    icon="pi pi-pencil"
+                    severity="info"
+                    size="small"
+                    text
+                    rounded
+                    @click="editPosition(data)"
+                    v-tooltip.top="'Edit Position'"
+                  />
+                  <Button
+                    icon="pi pi-trash"
+                    severity="danger"
+                    size="small"
+                    text
+                    rounded
+                    @click="confirmDelete(data)"
+                    v-tooltip.top="'Delete Position'"
+                  />
+                </div>
               </template>
             </Column>
 
@@ -98,7 +116,7 @@
       <Dialog 
         v-model:visible="positionDialog" 
         :style="{width: '450px'}" 
-        header="Position Details" 
+        :header="isEditing ? 'Edit Position' : 'Add New Position'" 
         :modal="true" 
         class="p-fluid"
       >
@@ -157,6 +175,33 @@
           <small class="p-error" v-if="submitted && !newPosition.max_candidate">Max candidate is required.</small>
         </div>
 
+        <div class="mb-3">
+          <label for="college_can_vote">College (Optional)</label>
+          <small class="block text-gray-500 mb-1">Select a college if this position is specific to that college only.</small>
+          <Dropdown
+            id="college_can_vote"
+            v-model="newPosition.college_can_vote"
+            :options="[{ id: null, college_name: 'All Colleges' }, ...collegeStore.colleges]"
+            optionLabel="college_name"
+            optionValue="id"
+            placeholder="Select College"
+            class="w-full mt-1"
+            :class="{'p-invalid': submitted && !newPosition.college_can_vote}"
+          >
+            <template #value="slotProps">
+              <div v-if="slotProps.value">
+                {{ getCollegeName(slotProps.value) || 'All Colleges' }}
+              </div>
+              <span v-else>
+                {{ slotProps.placeholder }}
+              </span>
+            </template>
+            <template #option="slotProps">
+              <div>{{ slotProps.option.college_name || 'All Colleges' }}</div>
+            </template>
+          </Dropdown>
+        </div>
+
         <template #footer>
           <Button 
             label="Cancel" 
@@ -210,6 +255,7 @@
   
   <script setup>
   import { ref, onMounted, computed, watch } from 'vue';
+  import { useColleges } from '../../../stores/colleges';
   import { usePositionStore } from '../../../stores/positions';
   import Button from 'primevue/button';
   import Dialog from 'primevue/dialog';
@@ -227,12 +273,15 @@
   })
   
   const positionStore = usePositionStore();
+  const collegeStore = useColleges();
+  const toast = useToast();
   const loading = ref(false);
   const error = ref(null);
   const positionDialog = ref(false);
   const deleteDialog = ref(false);
   const positionToDelete = ref(null);
   const submitted = ref(false);
+  const isEditing = ref(false);
   const home = ref({
       label: 'Dashboard',
       icon: 'pi pi-home',
@@ -243,10 +292,12 @@
       { label: 'Positions', icon: 'pi pi-list'},
   ]);
   const newPosition = ref({
+    id: null,
     title: '',
     description: '',
     order: 1,
     max_candidate: 1,
+    college_can_vote: null
   });
   
   // Load positions when component mounts
@@ -263,46 +314,119 @@
     }
   });
   
-  const openNew = () => {
+  const openNew = async () => {
     newPosition.value = {
+      id: null,
       title: '',
       description: '',
-      order: positions.value.length > 0 ? Math.max(...positions.value.map(p => p.order || 0)) + 1 : 1
+      order: positions.value.length > 0 ? Math.max(...positions.value.map(p => p.order || 0)) + 1 : 1,
+      max_candidate: 1,
+      college_can_vote: null
     };
     submitted.value = false;
     positionDialog.value = true;
+    isEditing.value = false;
+    updateInitialOrder();
+  
+    // Fetch colleges if not already loaded
+    if (collegeStore.colleges.length === 0) {
+      await collegeStore.getColleges();
+    }
+  };
+
+  const editPosition = async (positionData) => {
+    // Reset the form and set all position data including college_can_vote
+    newPosition.value = {
+      id: positionData.id,
+      title: positionData.title,
+      description: positionData.description || '',
+      order: positionData.order,
+      max_candidate: positionData.max_candidate || 1,
+      college_can_vote: positionData.college_can_vote || null
+    };
+    
+    // Clear any previous submission state
+    submitted.value = false;
+    positionDialog.value = true;
+    
+    // Set dialog title for editing
+    isEditing.value = true;
+  
+    // Fetch colleges if not already loaded
+    if (collegeStore.colleges.length === 0) {
+      await collegeStore.getColleges();
+    }
   };
 
   const hideDialog = () => {
     positionDialog.value = false;
     submitted.value = false;
+    isEditing.value = false;
   };
 
   const savePosition = async () => {
     submitted.value = true;
     
-    if (!newPosition.value.title || !newPosition.value.order) return;
+    // Basic validation
+    if (!newPosition.value.title || !newPosition.value.order) {
+      loading.value = false;
+      return;
+    }
     
     loading.value = true;
+    error.value = null;
+    
     try {
-      const { error } = await positionStore.addPosition(
-        newPosition.value.title,
-        newPosition.value.description,
-        newPosition.value.order,
-        newPosition.value.max_candidate
-      );
+      let result;
+      const isEditing = !!newPosition.value.id;
+      
+      if (isEditing) {
+        // Update existing position
+        const { id, ...updates } = newPosition.value;
+        result = await positionStore.updatePosition(id, updates);
+      } else {
+        // Create new position
+        result = await positionStore.addPosition(
+          newPosition.value.title,
+          newPosition.value.description,
+          newPosition.value.order,
+          newPosition.value.max_candidate,
+          newPosition.value.college_can_vote
+        );
+      }
   
-      if (!error) {
-        positionDialog.value = false;
+      if (!result.error) {
+        toast.add({
+          severity: 'success',
+          summary: 'Success',
+          detail: `Position ${isEditing ? 'updated' : 'created'} successfully`,
+          life: 3000
+        });
+        
+        // Close dialog and reset form
+        hideDialog();
+        
         // Refresh the positions list
         await positionStore.getPositions();
       } else {
-        console.error('Error adding position:', error);
-        error.value = 'Failed to add position. Please try again.';
+        console.error('Error saving position:', result.error);
+        error.value = `Failed to ${isEditing ? 'update' : 'add'} position. Please try again.`;
+        toast.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: `Failed to ${isEditing ? 'update' : 'add'} position`,
+          life: 5000
+        });
       }
     } catch (e) {
       console.error('Unexpected error:', e);
-      error.value = 'Unexpected error adding position.';
+      error.value = 'An unexpected error occurred. Please try again.';
+      toast.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'An unexpected error occurred',
+        life: 5000
+      });
     } finally {
       loading.value = false;
     }
@@ -348,6 +472,13 @@
     }
   };
   
+  // Helper function to get college name by ID
+  const getCollegeName = (collegeId) => {
+    if (!collegeId) return 'All Colleges';
+    const college = collegeStore.colleges.find(c => c.id === collegeId);
+    return college ? college.college_name : 'Unknown College';
+  };
+
   // Update order when positions change
   watch(positions, () => {
     updateInitialOrder();

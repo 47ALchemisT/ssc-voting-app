@@ -408,30 +408,16 @@ const fetchElectionData = async () => {
     // First, collect all unique position objects from candidates
     const positionMap = new Map();
     
+        // Get user's college ID from auth store
+    const userCollegeId = authStore.profile?.college_id;
+    
     // First, try to get positions directly
     try {
       const { data: positionsData } = await electionStore.getElectionPositions(electionId);
       if (positionsData && positionsData.length > 0) {
         positionsData.forEach(pos => {
-          positionMap.set(pos.id, {
-            id: pos.id,
-            name: pos.title || `Position ${pos.id}`,
-            order: pos.order || 0,
-            max_candidate: pos.max_candidate || 1, // Ensure max_candidate is set
-            ...pos
-          });
-        });
-      }
-    } catch (err) {
-      console.error('Error fetching positions:', err);
-    }
-
-    // If no positions found, try to get them from candidates
-    if (positionMap.size === 0 && candidatesData) {
-      candidatesData.forEach(candidate => {
-        if (candidate.position && candidate.position.id) {
-          const pos = candidate.position;
-          if (!positionMap.has(pos.id)) {
+          // Only include position if it's not college-restricted or matches user's college
+          if (pos.college_can_vote === null || pos.college_can_vote === userCollegeId) {
             positionMap.set(pos.id, {
               id: pos.id,
               name: pos.title || `Position ${pos.id}`,
@@ -439,6 +425,29 @@ const fetchElectionData = async () => {
               max_candidate: pos.max_candidate || 1, // Ensure max_candidate is set
               ...pos
             });
+          }
+        });
+      }
+    } catch (err) {
+      console.error('Error fetching positions:', err);
+    }
+
+    // If no positions found, try to get them from candidates (with college filtering)
+    if (positionMap.size === 0 && candidatesData) {
+      candidatesData.forEach(candidate => {
+        if (candidate.position && candidate.position.id) {
+          const pos = candidate.position;
+          // Only include position if it's not college-restricted or matches user's college
+          if (pos.college_can_vote === null || pos.college_can_vote === userCollegeId) {
+            if (!positionMap.has(pos.id)) {
+              positionMap.set(pos.id, {
+                id: pos.id,
+                name: pos.title || `Position ${pos.id}`,
+                order: pos.order || 0,
+                max_candidate: pos.max_candidate || 1, // Ensure max_candidate is set
+                ...pos
+              });
+            }
           }
         }
       });

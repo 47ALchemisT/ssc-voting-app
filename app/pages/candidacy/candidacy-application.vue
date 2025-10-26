@@ -92,13 +92,17 @@
 
             <!-- Partylist Selection -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Partylist</label>
+              <div class="flex items-center gap-2 mb-1">
+                <label class="text-sm font-medium text-gray-700">Partylist</label>
+                <span class="text-xs text-gray-500">(Leave empty if independent)</span>
+              </div>
               <Dropdown
                 v-model="form.partylistId"
-                :options="[{ id: null, name: 'Independent' }, ...(partylistStore.partylists || [])]"
+                :options="partylistStore.partylists || []"
                 option-label="name"
                 option-value="id"
-                placeholder="Select a partylist"
+                :show-clear="true"
+                placeholder="Select a partylist (leave empty for independent)"
                 class="w-full"
                 :class="{ 'p-invalid': errors.partylistId }"
                 :loading="partylistStore.loading"
@@ -504,10 +508,6 @@ const validateForm = () => {
   
   if (!form.value.positionId) {
     newErrors.positionId = 'Please select a position'
-  }
-  
-  if (!form.value.partylistId) {
-    newErrors.partylistId = 'Please select a partylist'
   }
   
   if (!form.value.platform?.trim()) {

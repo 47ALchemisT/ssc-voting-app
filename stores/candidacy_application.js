@@ -1,6 +1,7 @@
 // stores/candidacy_application.js
 import { defineStore } from 'pinia'
 import { useSupabaseClient, useSupabaseUser } from '#imports'
+import { useNotificationStore } from './notification'
 import { ref, computed } from 'vue'
 import { useAuthStore } from './auth'
 
@@ -8,7 +9,7 @@ export const useCandidacyApplicationStore = defineStore('candidacyApplications',
   const supabase = useSupabaseClient()
   const user = useSupabaseUser()
   const authStore = useAuthStore()
-
+  const notificationStore = useNotificationStore()
   const applications = ref([])
   const loading = ref(false)
   const error = ref(null)
@@ -82,7 +83,7 @@ export const useCandidacyApplicationStore = defineStore('candidacyApplications',
       // Get user profile to verify existence and get the numeric ID
       const { data: userProfile, error: profileError } = await supabase
         .from('user_profile')
-        .select('id')
+        .select('id, first_name, last_name')
         .eq('user_id', user.value.id)
         .single()
 
@@ -145,6 +146,33 @@ export const useCandidacyApplicationStore = defineStore('candidacyApplications',
       
       // Add to local state
       applications.value = [data, ...applications.value]
+
+      // 🔔 CREATE NOTIFICATION
+      try {
+        // Fetch the admin user
+        const { data: adminUser, error: adminError } = await supabase
+          .from('user_profile')
+          .select('id')
+          .eq('is_admin', 1)
+          .single();
+        
+        if (adminError) throw adminError;
+        
+        // Send notification to the admin
+        await notificationStore.createNotification({
+          userId: userProfile.id,
+          title: 'New Candidacy Application',
+          message: `A new application for ${data.position.name} has been submitted and is pending your approval.`,
+          type: 'candidacy_application',
+          link: null, // Make sure this route exists
+          created_at: new Date().toISOString(),
+          SubjectTo: adminUser.id
+        });
+      } catch (notifError) {
+        console.warn('Notification creation failed:', notifError)
+        // Don’t block the app if notification fails
+      }
+
       return { data, error: null }
 
     } catch (err) {
@@ -155,6 +183,7 @@ export const useCandidacyApplicationStore = defineStore('candidacyApplications',
       loading.value = false
     }
   }
+
 
   const cancelApplication = async (id) => {
     clearError()

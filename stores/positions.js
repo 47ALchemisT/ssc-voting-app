@@ -9,17 +9,29 @@ export const usePositionStore = defineStore('positions', () => {
     const error = ref(null);
 
     const getPositions = async () => {
-        try{
-            const {data,error} = await supabase.from('positions').select('*');
-            positions.value = data;
-            return {data,error};
-        }catch(e){
-            console.log(e);
-            return {data:null,error:e};
+        try {
+            const { data, error } = await supabase
+                .from('positions')
+                .select(`
+                    *,
+                    college:colleges (
+                        id,
+                        college_name,
+                        alias
+                    )
+                `)
+                .order('order', { ascending: true });
+                
+            positions.value = data || [];
+            return { data, error };
+        } catch (e) {
+            console.error('Error fetching positions:', e);
+            error.value = 'Failed to load positions';
+            return { data: null, error: e };
         }
     } 
 
-    const addPosition = async (title, description, order, max_candidate) => {
+    const addPosition = async (title, description, order, max_candidate, college_can_vote) => {
         try{
             const {data,error} = await supabase.from('positions').insert([
                 {
@@ -27,6 +39,7 @@ export const usePositionStore = defineStore('positions', () => {
                     description,
                     order,
                     max_candidate,
+                    college_can_vote,
                     created_at: new Date().toISOString()
                 }
             ]).select('*');
@@ -37,6 +50,33 @@ export const usePositionStore = defineStore('positions', () => {
             return {data:null,error:e};
         }
     }
+
+    const updatePosition = async (id, updates) => {
+        try {
+            const { data, error } = await supabase
+                .from('positions')
+                .update({
+                    title: updates.title,
+                    description: updates.description,
+                    order: updates.order,
+                    max_candidate: updates.max_candidate,
+                    college_can_vote: updates.college_can_vote,
+                })
+                .eq('id', id)
+                .select('*');
+
+            if (!error && data && data.length > 0) {
+                const index = positions.value.findIndex(p => p.id === id);
+                if (index !== -1) {
+                    positions.value[index] = { ...positions.value[index], ...data[0] };
+                }
+            }
+            return { data, error };
+        } catch (e) {
+            console.error('Error updating position:', e);
+            return { data: null, error: e };
+        }
+    };
 
     const deletePosition = async (id) => {
         try{
@@ -57,6 +97,7 @@ export const usePositionStore = defineStore('positions', () => {
         error,
         getPositions,
         addPosition,
+        updatePosition,
         deletePosition
     }
 })
