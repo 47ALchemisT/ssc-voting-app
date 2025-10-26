@@ -48,8 +48,13 @@ export const useNotificationStore = defineStore('notification', () => {
     }
   }
 
-  const fetchMyNotifications = async () => {
+  const fetchMyNotifications = async (forceRefresh = false) => {
     if (!user.value?.id) return { data: [], error: 'User not logged in' }
+
+    // Return cached notifications if available and not forcing a refresh
+    if (!forceRefresh && notifications.value.length > 0) {
+      return { data: notifications.value, error: null };
+    }
 
     loading.value = true
     clearError()
@@ -120,6 +125,40 @@ export const useNotificationStore = defineStore('notification', () => {
     }
   }
 
+  // Mark all unread notifications as read
+  const markAllAsRead = async () => {
+    try {
+      // Get all unread notification IDs
+      const unreadIds = notifications.value
+        .filter(n => !n.is_read)
+        .map(n => n.id);
+
+      if (unreadIds.length === 0) return { data: [], error: null };
+
+      // Update all unread notifications in the database
+      const { data, error: err } = await supabase
+        .from('notification')
+        .update({ is_read: 1 })
+        .in('id', unreadIds)
+        .select();
+
+      if (err) throw err;
+
+      // Update local state
+      notifications.value = notifications.value.map(notification => 
+        unreadIds.includes(notification.id) 
+          ? { ...notification, is_read: 1 } 
+          : notification
+      );
+
+      return { data, error: null };
+    } catch (err) {
+      console.error('Error marking all as read:', err);
+      error.value = err.message;
+      return { data: null, error: err.message };
+    }
+  };
+
   // Mark notification as read
   const markAsRead = async (id) => {
     if (!id) return { data: null, error: 'Notification ID is required' }
@@ -145,6 +184,39 @@ export const useNotificationStore = defineStore('notification', () => {
     }
   }
 
+  // Delete all read notifications
+  const deleteAllRead = async () => {
+    try {
+      loading.value = true;
+      
+      // Get all read notification IDs
+      const readIds = notifications.value
+        .filter(n => n.is_read)
+        .map(n => n.id);
+
+      if (readIds.length === 0) return { data: [], error: null };
+
+      // Delete all read notifications from the database
+      const { error: deleteError } = await supabase
+        .from('notification')
+        .delete()
+        .in('id', readIds);
+
+      if (deleteError) throw deleteError;
+
+      // Update local state by removing deleted notifications
+      notifications.value = notifications.value.filter(n => !n.is_read);
+
+      return { data: readIds, error: null };
+    } catch (err) {
+      console.error('Error deleting read notifications:', err);
+      error.value = err.message;
+      return { data: null, error: err.message };
+    } finally {
+      loading.value = false;
+    }
+  };
+
   return {
     notifications,
     loading,
@@ -152,6 +224,8 @@ export const useNotificationStore = defineStore('notification', () => {
     fetchNotifications,
     createNotification,
     markAsRead,
+    markAllAsRead,
+    deleteAllRead,
     clearError,
     fetchMyNotifications
   }

@@ -4,11 +4,15 @@
     <div class="p-3 lg:p-4 flex-shrink-0">
       <div class="flex items-center justify-between">
         <transition name="fade" mode="out-in">
-          <span v-if="!collapsed" class="text-lg lg:text-xl font-semibold text-gray-900 whitespace-nowrap">
-            Voting APP
+          <span v-if="!collapsed" class="text-lg lg:text-xl gap-2 flex items-center font-semibold text-gray-900 whitespace-nowrap">
+            <img src="../assets/images/SSC_Logo.jpg" alt="" class="w-14 h-14">
+            <div>
+            <p class="text-gray-800 font-bold">SSC Election APP</p>
+            <p class="text-gray-500 text-xs border-t border-gray-300">MSU at Naawan Voting App</p>
+            </div>
           </span>
-          <span v-else class="text-lg lg:text-xl font-semibold text-gray-900 text-center w-8">
-            V
+          <span v-else class="text-lg lg:text-xl font-semibold text-gray-900 text-center w-14">
+            <img src="../assets/images/SSC_Logo.jpg" alt="" class="w-14 h-14 rounded-full object-cover">
           </span>
         </transition>
       </div>

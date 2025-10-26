@@ -1,6 +1,6 @@
 <template>
     <!-- Confirmation Dialogs -->
-    <Dialog v-model:visible="showApproveDialog" modal header="Confirm Approval" :style="{ width: '450px' }" :closable="false">
+    <Dialog v-model:visible="showApproveDialog" modal header="Confirm Approval" :style="{ width: '90%', maxWidth: '450px' }" :closable="false">
       <div class="flex flex-col items-center">
         <i class="pi pi-check-circle text-5xl text-green-500 mb-4"></i>
         <p class="text-center mb-6">Are you sure you want to approve this application?</p>
@@ -14,7 +14,7 @@
     </Dialog>
 
     <!-- Result Dialog -->
-    <Dialog v-model:visible="showResultDialog" modal header="Action Completed" :style="{ width: '450px' }" :closable="false">
+    <Dialog v-model:visible="showResultDialog" modal header="Action Completed" :style="{ width: '90%', maxWidth: '450px' }" :closable="false">
       <div class="flex flex-col items-center">
         <i class="pi pi-check-circle text-5xl text-emerald-500 mb-4"></i>
         <p class="text-center mb-6">{{ resultMessage }}</p>
@@ -26,7 +26,7 @@
       </template>
     </Dialog>
 
-    <Dialog v-model:visible="showRejectDialog" modal header="Confirm Rejection" :style="{ width: '450px' }" :closable="false">
+    <Dialog v-model:visible="showRejectDialog" modal header="Confirm Rejection" :style="{ width: '90%', maxWidth: '450px' }" :closable="false">
       <div class="flex flex-col items-center">
         <i class="pi pi-times-circle text-5xl text-red-500 mb-4"></i>
         <p class="text-center mb-6">Are you sure you want to reject this application?</p>
@@ -40,20 +40,21 @@
     </Dialog>
 
     <div class="mb-6">
-        <div class="flex justify-between mb-3">
-            <div>
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 mb-4">
+            <div class="flex-1">
                 <h1 class="text-lg font-medium text-gray-800">Applicant Information</h1>
-                <p v-if="application" class="text-gray-500 text-sm">Application was submitted on: {{ formatDate(application.created_at) }}</p>
+                <p v-if="application" class="text-gray-500 text-sm">Submitted: {{ formatDate(application.created_at) }}</p>
                 <p v-else class="text-gray-500 text-sm">Loading application details...</p>
             </div>
-            <div>
+            <div class="w-full sm:w-auto">
                 <Button 
-                label="Back to Applications" 
-                outline
-                size="small"
-                @click="navigateBack" 
-                class="mb-4"
-            />
+                    label="Back to Applications" 
+                    icon="pi pi-arrow-left"
+                    iconPos="left"
+                    size="small"
+                    @click="navigateBack" 
+                    class="w-full sm:w-auto justify-center"
+                />
             </div>
         </div>
 
@@ -68,11 +69,11 @@
       </div>
 
       <div v-else-if="application" class="mx-auto bg-white rounded-lg">
-        <div v-if="!loading" class="grid grid-cols-3 gap-6">
+        <div v-if="!loading" class="flex flex-col lg:flex-row gap-6">
           <!-- Left Column -->
-          <div class="col-span-1">
+          <div class="w-full lg:w-1/3">
             <div class="bg-gray-50 border border-gray-200 p-4 rounded-lg text-center">
-              <div class="mx-auto mb-4 w-48 h-48 rounded-lg overflow-hidden flex items-center justify-center bg-gray-200">
+              <div class="mx-auto mb-4 w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 rounded-lg overflow-hidden flex items-center justify-center bg-gray-200">
                 <img
                   v-if="application.user?.avatar_url"
                   :src="application.user.avatar_url"
@@ -83,7 +84,7 @@
                   {{ application.user?.first_name ? application.user.first_name[0] + (application.user.last_name ? application.user.last_name[0] : '') : '?' }}
                 </span>
               </div>
-              <h2 class="text-xl font-semibold">{{ application.user?.first_name }} {{ application.user?.last_name }}</h2>
+              <h2 class="text-lg sm:text-xl font-semibold break-words text-center">{{ application.user?.first_name }} {{ application.user?.last_name }}</h2>
               <p class="text-gray-500 text-sm">{{ application.user?.email }}</p>
               
               <div class="mt-4 pt-4 border-t border-gray-200">
@@ -107,21 +108,21 @@
             </div>
             <div v-if="authStore.isAdmin && shouldShowAdminActions" class="mt-6 pt-6 border-t border-gray-200">
                 <h4 class="text-sm font-medium text-gray-500 mb-4">ADMIN ACTIONS</h4>
-                <div class="flex gap-3">
+                <div class="grid grid-cols-2 sm:flex gap-2 sm:gap-3">
                     <Button 
                         v-if="application.status === 0"
                         label="Reject"
                         severity="secondary"
                         :loading="updating"
                         @click="showRejectDialog = true"
-                        class="flex-1"
+                        class="w-full sm:flex-1"
                     />
                     <Button 
                         v-if="application.status === 0"
                         label="Approve"
                         :loading="updating"
                         @click="showApproveDialog = true"
-                        class="flex-1"
+                        class="w-full sm:flex-1"
                     />
                     <Button 
                         v-if="application.status !== 0"
@@ -131,27 +132,29 @@
                         outlined
                         :loading="updating"
                         @click="updateStatus(0)"
-                        class="flex-1"
+                        class="w-full sm:flex-1"
                     />
                 </div>
             </div>
           </div>
 
           <!-- Right Column -->
-          <div class="col-span-2">
+          <div class="w-full lg:w-2/3">
             <div class="bg-white p-6 rounded-lg border border-gray-200 h-full">
               <h3 class="text-lg font-semibold mb-4">Application Details</h3>
               
               <div class="space-y-6">
-                <div>
+                <div class="-mx-4 sm:mx-0">
                   <h4 class="text-sm font-medium text-gray-500 mb-2">PLATFORM</h4>
-                  <div class="bg-gray-50 p-4 rounded border border-gray-200 min-h-[150px]">
-                    {{ application.platform || 'No platform information provided' }}
+                  <div class="bg-gray-50 p-4 rounded border border-gray-200 min-h-[150px] overflow-x-auto">
+                    <div class="whitespace-pre-line break-words">
+                      {{ application.platform || 'No platform information provided' }}
+                    </div>
                   </div>
                 </div>
                 <div v-if="authStore.isAdmin">
                   <h4 class="text-sm font-medium text-gray-500 mb-4">REQUIREMENTS</h4>
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <!-- Grade Slip Card -->
                     <div v-if="application.grade_slip" class="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-200">
                       <div class="p-4">
