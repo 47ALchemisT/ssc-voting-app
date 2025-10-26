@@ -14,14 +14,14 @@
       v-model:visible="showPreview" 
       :modal="true" 
       :style="{ width: '80vw', maxWidth: '1000px' }" 
-      :header="'Preview: ' + electionName + ' Results'"
+      :header="'Export Preview'"
       :closable="!exporting"
       :closeOnEscape="!exporting"
     >
       <div class="preview-container">
         <div class="preview-content">
           <div class="text-center p-4 border-b">
-            <h2 class="text-2xl font-bold mb-2">{{ electionName }} - Election Results</h2>
+            <h2 class="text-2xl font-bold mb-2">Election Result</h2>
             <div class="text-sm text-gray-500">
               Generated on {{ formattedDate }}
             </div>
@@ -66,10 +66,12 @@
           :disabled="exporting" 
         />
         <Button 
-          label="Download PDF" 
-          icon="pi pi-download" 
+          :label="exporting ? 'Generating...' : 'Download PDF'" 
+          :icon="exporting ? 'pi pi-spinner pi-spin' : 'pi pi-download'" 
           @click="exportToPdf" 
           :disabled="exporting"
+          :loading="exporting"
+          class="p-button-primary"
         />
       </template>
     </Dialog>
@@ -80,18 +82,27 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
 import Card from 'primevue/card';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
+import 'html2canvas'; // Ensure html2canvas is available
+import MSULogo from '../../assets/images/Background.png';
+import SSCLogo from '../../assets/images/SSC_Logo.jpg';
 
-// Client-side only import
+
+// Import html2pdf dynamically
 let html2pdf;
+
+// Load html2pdf.js dynamically
 if (process.client) {
   import('html2pdf.js').then(module => {
-    html2pdf = module.default;
+    html2pdf = module.default || module;
+  }).catch(error => {
+    console.error('Failed to load html2pdf.js:', error);
+    throw error; // Re-throw to handle in the calling function
   });
 }
 
@@ -117,6 +128,17 @@ const showPreview = ref(false);
 const exporting = ref(false);
 const pdfContent = ref(null);
 
+// Ensure html2pdf is properly initialized
+onMounted(() => {
+  if (process.client && !html2pdf) {
+    import('html2pdf.js').then(module => {
+      html2pdf = module.default || module;
+    }).catch(error => {
+      console.error('Failed to load html2pdf.js:', error);
+    });
+  }
+});
+
 // Format the current date
 const formattedDate = computed(() => {
   return new Date().toLocaleString('en-US', {
@@ -135,133 +157,220 @@ const getTotalVotes = (candidates) => {
 
 const calculatePercentage = (votes, totalVotes) => {
   if (!totalVotes || isNaN(votes)) return '0.0';
-  return ((votes || 0) / totalVotes * 100).toFixed(1);
+  const percentage = ((votes || 0) / totalVotes) * 100;
+  return percentage.toFixed(1);
 };
 
 const exportToPdf = async () => {
-  if (!process.client) return;
+  if (!process.client || !html2pdf) {
+    console.error('html2pdf not available');
+    return;
+  }
   
   exporting.value = true;
   
   try {
-    const { jsPDF } = await import('jspdf');
+    // Create a temporary div for the PDF content
+    const tempDiv = document.createElement('div');
     
-    // Create a new jsPDF instance
-    const doc = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4'
-    });
-    
-    // Add title
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(14);
-    doc.text(`Supreme Student Council Election Results`, 15, 30);
-    
-    // Add date
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    doc.text(`Generated on ${formattedDate.value}`, 15, 37);
-    
-    let yPosition = 45; // Starting Y position for the first table
-    
-    // Helper function to safely add text
-    const addText = (text, x, y, options = {}) => {
-      const safeText = text !== null && text !== undefined ? String(text) : '';
-      doc.text(safeText, x, y, options);
+    // Convert imported images to data URLs
+    const getBase64Image = (img) => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      return canvas.toDataURL('image/png');
     };
+    
+    // Create image elements from the imported images
+    const msuLogo = new Image();
+    msuLogo.src = MSULogo;
+    const sscLogo = new Image();
+    sscLogo.src = SSCLogo;
+    
+    // Generate HTML for the PDF with logos and centered text
+    let htmlContent = [
+      '<div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">',
+      '  <div style="display: flex; justify-content: center; gap: 20px; margin-bottom: 30px;">',
+      '    <div style="width: 80px; height: 80px; display: flex; align-items: center;">',
+      '      <img src="' + msuLogo.src + '" style="max-width: 100%; max-height: 65px; object-fit: contain;" alt="MSU Logo">',
+      '    </div>',
+      '    <div style="text-align: center;">',
+      '      <div style="font-size: 18px; font-weight: 600; color: #3c3c3c;">Mindanao State University at Naawan</div>',
+      '      <div style="font-size: 18px; font-weight: 600; color: #3c3c3c; margin-bottom: 5px;">Supreme Student Council</div>',
+      '      <div style="font-size: 20px; font-weight: 700; margin: 10px 0; color: #3c3c3c;">Election Result</div>',
+      '      <div style="color: #888; font-size: 12px;">Generated on ' + formattedDate.value + '</div>',
+      '    </div>',
+      '    <div style="width: 80px; height: 80px; display: flex; align-items: center; justify-content: flex-end;">',
+      '      <img src="' + sscLogo.src + '" style="max-width: 100%; max-height: 80px; object-fit: contain;" alt="SSC Logo">',
+      '    </div>',
+      '  </div>'
+    ].join('');
 
     // Add each position's results as a table
     if (Array.isArray(props.positions)) {
-      for (const position of props.positions) {
-        if (!position) continue;
+      props.positions.forEach((position) => {
+        if (!position) return;
         
         const positionName = position.title || position.name || 'Unnamed Position';
         const candidates = Array.isArray(position.candidates) ? position.candidates : [];
         const totalVotes = getTotalVotes(candidates);
-        
-        // Add position header
-        doc.setFont(undefined, 'bold');
-        doc.setFontSize(12);
-        addText(positionName, 15, yPosition);
-        yPosition += 4;
-        
-        // Table headers
-        doc.setFillColor(240, 240, 240);
-        doc.rect(15, yPosition, 180, 8, 'F');
-        doc.setFont(undefined, 'bold');
-        doc.setFontSize(10);
-        addText('Candidate', 16, yPosition + 6);
-        addText('Votes', 150, yPosition + 6, { align: 'right' });
-        addText('Percentage', 190, yPosition + 6, { align: 'right' });
-        
-        yPosition += 8;
-        
-        // Table rows
-        doc.setFont(undefined, 'normal');
-        doc.setFontSize(10);
-        
-        // Sort candidates by vote count (descending)
         const sortedCandidates = [...candidates].sort((a, b) => (b.vote_count || 0) - (a.vote_count || 0));
         
-        for (const [index, candidate] of sortedCandidates.entries()) {
-          // Add a new page if needed
-          if (yPosition > 270) { // 297mm is A4 height, leaving some margin
-            doc.addPage();
-            yPosition = 20;
-          }
+        htmlContent += 
+          '<div style="margin-bottom: 30px; page-break-inside: avoid;">' +
+            '<h2 style="font-size: 16px; color: #3c3c3c; font-weight: 600; margin: 0 0 10px 0; padding: 8px 0;">' +
+              positionName +
+            '</h2>' +
+            '<div style="overflow-x: auto;">' +
+              '<table style="width: 100%; border-collapse: collapse; margin-bottom: 10px; border: 1px solid #3c3c3c;">' +
+                '<thead>' +
+                  '<tr style="background-color: #f1f5f9;">' +
+                    '<th style="text-align: left; padding: 5px; font-weight: 600; border: 1px solid #3c3c3c;">Candidate</th>' +
+                    '<th style="text-align: left; padding: 5px; font-weight: 600; border: 1px solid #3c3c3c;">Votes</th>' +
+                    '<th style="text-align: left; padding: 5px; font-weight: 600; border: 1px solid #3c3c3c;">Percentage</th>' +
+                  '</tr>' +
+                '</thead>' +
+                '<tbody>';
+
+        // Generate candidate rows
+        const candidateRows = sortedCandidates
+          .filter(candidate => candidate) // Filter out null/undefined candidates
+          .map((candidate, index) => {
+            const voteCount = candidate.vote_count || 0;
+            const percentage = calculatePercentage(voteCount, totalVotes);
+            const rowStyle = index % 2 === 0 ? 'background-color: #ffffff;' : '';
+            
+            return [
+              '<tr style="' + rowStyle + '">',
+              '  <td style="padding: 5px; border: 1px solid #3c3c3c;">' + (candidate.name || 'Unnamed Candidate') + '</td>',
+              '  <td style="text-align: left; padding: 5px; border: 1px solid #3c3c3c;">' + voteCount + '</td>',
+              '  <td style="text-align: left; padding: 5px; border: 1px solid #3c3c3c;">' + percentage + '%</td>',
+              '</tr>'
+            ].join('');
+          });
           
-          if (!candidate) continue;
-          
-          const voteCount = candidate.vote_count || 0;
-          const percentage = calculatePercentage(voteCount, totalVotes);
-          
-          // Add row with alternating background
-          if (index % 2 === 0) {
-            doc.setFillColor(250, 250, 250);
-            doc.rect(15, yPosition, 180, 8, 'F');
-          }
-          
-          // Add row content
-          addText(candidate.name || 'Unnamed Candidate', 16, yPosition + 6);
-          addText(String(voteCount), 150, yPosition + 6, { align: 'right' });
-          addText(`${percentage}%`, 190, yPosition + 6, { align: 'right' });
-          
-          yPosition += 8;
-        }
-        
-        // Add some space between tables
-        yPosition += 10;
+        htmlContent += candidateRows.join('');
+
+        // Close table elements
+        htmlContent += [
+          '      </tbody>',
+          '    </table>',
+          '  </div>',
+          '</div>'
+        ].join('');
+      });
+    }
+
+    // Add signature section
+    htmlContent += [
+      '  <div style="margin-top: 50px; padding-top: 20px;">',
+      '    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 30px;">',
+      '      <div style="margin-bottom: 20px;">',
+      '        <div style="width: 200px; border-top: 1px solid #000; margin-bottom: 5px;"></div>',
+      '        <div style="font-weight: 600;">Sylvia C. Labial</div>',
+      '        <div style="font-style: italic; color: #666; font-size: 14px;">Chairperson</div>',
+      '      </div>',
+      '      <div style="margin-bottom: 20px;">',
+      '        <div style="width: 200px; border-top: 1px solid #000; margin-bottom: 5px;"></div>',
+      '        <div style="font-weight: 600;">Voltaire M. Bernal</div>',
+      '        <div style="font-style: italic; color: #666; font-size: 14px;">Vice-Chairperson</div>',
+      '      </div>',
+      '      <div style="margin-bottom: 20px;">',
+      '        <div style="width: 200px; border-top: 1px solid #000; margin-bottom: 5px;"></div>',
+      '        <div style="font-weight: 600;">Juvy S. Arjona</div>',
+      '        <div style="font-style: italic; color: #666; font-size: 14px;">Head, Grievance Committee</div>',
+      '      </div>',
+      '      <div style="margin-bottom: 20px;">',
+      '        <div style="width: 200px; border-top: 1px solid #000; margin-bottom: 5px;"></div>',
+      '        <div style="font-weight: 600;">Hershy B. Cadampog</div>',
+      '        <div style="font-style: italic; color: #666; font-size: 14px;">COMELEC Secretary</div>',
+      '      </div>',
+      '      <div style="margin-bottom: 20px;">',
+      '        <div style="width: 200px; border-top: 1px solid #000; margin-bottom: 5px;"></div>',
+      '        <div style="font-weight: 600;">Francis Artchess Babao</div>',
+      '        <div style="font-style: italic; color: #666; font-size: 14px;">Member, Grievance Committee</div>',
+      '      </div>',
+      '      <div style="margin-bottom: 20px;">',
+      '        <div style="width: 200px; border-top: 1px solid #000; margin-bottom: 5px;"></div>',
+      '        <div style="font-weight: 600;">Rosevel B. Colegado</div>',
+      '        <div style="font-style: italic; color: #666; font-size: 14px;">Member, Grievance Committee</div>',
+      '      </div>',
+      '      <div style="margin-bottom: 20px;">',
+      '        <div style="width: 200px; border-top: 1px solid #000; margin-bottom: 5px;"></div>',
+      '        <div style="font-weight: 600;">Yzl Debbie Ebina</div>',
+      '        <div style="font-style: italic; color: #666; font-size: 14px;">Member, Grievance Committee</div>',
+      '      </div>',
+      '      <div style="margin-bottom: 20px;">',
+      '        <div style="width: 200px; border-top: 1px solid #000; margin-bottom: 5px;"></div>',
+      '        <div style="font-weight: 600;">Isha Jared Abellanosa</div>',
+      '        <div style="font-style: italic; color: #666; font-size: 14px;">CBIT Representative</div>',
+      '      </div>',
+      '      <div style="margin-bottom: 20px;">',
+      '        <div style="width: 200px; border-top: 1px solid #000; margin-bottom: 5px;"></div>',
+      '        <div style="font-weight: 600;">Andi Glenn C. Sabellano</div>',
+      '        <div style="font-style: italic; color: #666; font-size: 14px;">CBIT Representative</div>',
+      '      </div>',
+      '      <div style="margin-bottom: 20px;">',
+      '        <div style="width: 200px; border-top: 1px solid #000; margin-bottom: 5px;"></div>',
+      '        <div style="font-weight: 600;">Keith Karylle B. Acub</div>',
+      '        <div style="font-style: italic; color: #666; font-size: 14px;">CELS Representative</div>',
+      '      </div>',
+      '      <div style="margin-bottom: 20px;">',
+      '        <div style="width: 200px; border-top: 1px solid #000; margin-bottom: 5px;"></div>',
+      '        <div style="font-weight: 600;">Vince Cielo Bongalos</div>',
+      '        <div style="font-style: italic; color: #666; font-size: 14px;">CELS Representative</div>',
+      '      </div>',
+      '      <div style="margin-bottom: 20px;">',
+      '        <div style="width: 200px; border-top: 1px solid #000; margin-bottom: 5px;"></div>',
+      '        <div style="font-weight: 600;">Yhusabelle Angel Gono</div>',
+      '        <div style="font-style: italic; color: #666; font-size: 14px;">CESS Representative</div>',
+      '      </div>',
+      '      <div style="margin-bottom: 20px;">',
+      '        <div style="width: 200px; border-top: 1px solid #000; margin-bottom: 5px;"></div>',
+      '        <div style="font-weight: 600;">Klent B. Capangpangan</div>',
+      '        <div style="font-style: italic; color: #666; font-size: 14px;">CESS Representative</div>',
+      '      </div>',
+      '      <div style="margin-bottom: 20px;">',
+      '        <div style="width: 200px; border-top: 1px solid #000; margin-bottom: 5px;"></div>',
+      '        <div style="font-weight: 600;">Shine Khacil Villar</div>',
+      '        <div style="font-style: italic; color: #666; font-size: 14px;">CFMS Representative</div>',
+      '      </div>',
+      '      <div style="margin-bottom: 20px;">',
+      '        <div style="width: 200px; border-top: 1px solid #000; margin-bottom: 5px;"></div>',
+      '        <div style="font-weight: 600;">Renie Magallanes</div>',
+      '        <div style="font-style: italic; color: #666; font-size: 14px;">CFMS Representative</div>',
+      '      </div>',
+      '    </div>',
+      '  </div>',
+      '</div>'
+    ].join('');
+
+    // Set the HTML content
+    tempDiv.innerHTML = htmlContent;
+    
+    // Generate PDF
+    const options = {
+      margin: [15, 15],
+      filename: `${props.electionName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_results_${new Date().toISOString().split('T')[0]}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { 
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        scrollY: 0
+      },
+      jsPDF: {
+        unit: 'mm',
+        format: 'a4',
+        orientation: 'portrait'
       }
-    }
+    };
     
-    // Generate filename with current date
-    const dateStr = new Date().toISOString().split('T')[0];
-    const fileName = `${props.electionName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_results_${dateStr}.pdf`;
+    // Generate and download the PDF
+    await html2pdf().set(options).from(tempDiv).save();
     
-    // Add signature line at the bottom
-    const signatureY = Math.min(yPosition + 30, 280); // Ensure it's not too close to the bottom
-    if (signatureY < 290) { // Make sure we have enough space
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(11);
-      
-      // Add a line for signature
-      doc.setDrawColor(150);
-      doc.setLineWidth(0.5);
-      doc.line(15, signatureY, 60, signatureY);
-      
-      // Add the name
-      doc.text('Cres Jean Itom', 15, signatureY + 10);
-      
-      // Add position/title if needed
-      doc.setFont('helvetica', 'italic');
-      doc.setFontSize(10);
-      doc.text('Authorized Signatory', 15, signatureY + 16);
-      
-    }
-    
-    // Save the PDF
-    doc.save(fileName);
   } catch (error) {
     console.error('Error generating PDF:', error);
     alert('Error generating PDF: ' + (error.message || 'Unknown error'));
@@ -438,7 +547,6 @@ const exportToPdf = async () => {
   background: white;
   border-radius: 4px;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .preview-scrollable {
