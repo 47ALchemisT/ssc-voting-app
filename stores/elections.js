@@ -332,6 +332,21 @@ export const useElectionStore = defineStore('elections', () => {
     return election.status === 'completed';
   };
 
+  // Check if the current time is past the current election's end date
+  const isPastEndDate = async () => {
+    // If elections array is empty, try to fetch them first
+    if (elections.value.length === 0) {
+      await fetchElections();
+    }
+    
+    const currentElection = elections.value.find(e => e.is_current === 1);
+    if (!currentElection || !currentElection.end_date) return false;
+    
+    const endDate = new Date(currentElection.end_date);
+    const now = new Date();
+    return now > endDate;
+  };
+
   return {
     // State
     elections,
@@ -350,6 +365,7 @@ export const useElectionStore = defineStore('elections', () => {
     isElectionEnded,
     clearError,
     extendElectionEndDate,
-    forceEndElection
+    forceEndElection,
+    isPastEndDate
   };
 });

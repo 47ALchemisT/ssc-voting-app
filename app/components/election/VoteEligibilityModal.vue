@@ -4,7 +4,7 @@
       :label="label"
       :icon="icon"
       :size="size"
-      :disabled="disabled"
+      :disabled="disabled || isPastEndDate"
       @click="showModal = true"
       :pt="{
         root: {
@@ -12,7 +12,7 @@
           'text-white': isVotingPeriod
         }
       }"
-      v-tooltip.top="isVotingPeriod ? 'Check your voting eligibility' : 'Voting is not currently open'"
+      v-tooltip.top="isPastEndDate ? 'Voting period has ended' : (isVotingPeriod ? 'Check your voting eligibility' : 'Voting is not currently open')"
     />
 
     <Dialog 
@@ -106,6 +106,7 @@ import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useVoteStore } from '../../../stores/votes'
 import { useAuthStore } from '../../../stores/auth'
+import { useElectionStore } from '../../../stores/elections'
 import Searching from '../../assets/Icons/Searching.vue'
 import NotFound from '../../assets/Icons/NotFound.vue'
 import Authorized from '../../assets/Icons/Authorized.vue'
@@ -140,10 +141,24 @@ const props = defineProps({
 const emit = defineEmits(['eligible', 'not-eligible'])
 
 const router = useRouter()
+const electionStore = useElectionStore()
 const showModal = ref(false)
 const loading = ref(false)
-const error = ref(null)
-const isEligible = ref(false)
+const error = ref(null);
+const isEligible = ref(false);
+const isPastEndDate = ref(false);
+
+// Check if voting period has ended
+const checkVotingPeriod = async () => {
+  const result = await electionStore.isPastEndDate();
+  isPastEndDate.value = result;
+};
+
+// Initial check
+checkVotingPeriod().catch(err => {
+  isPastEndDate.value = false; // Default to false on error
+});
+
 const loadingMessages = [
   'Verifying your account...',
   'Checking voter database...',

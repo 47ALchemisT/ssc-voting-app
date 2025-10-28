@@ -16,10 +16,10 @@
         </div>
         <div class="flex gap-2">
             <ExportResults 
-                v-if = "authStore.isAdmin"
+                v-if="authStore.isAdmin "
                 :positions="positions" 
                 :election-name="electionName"
-                :disabled="loading || positions.length === 0"
+                :disabled="loading || positions.length === 0 || !electionStore.isElectionEnded(election)"
             />
         </div>
     </div>
