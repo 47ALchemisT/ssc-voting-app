@@ -11,7 +11,7 @@
     <!-- Statistics - Only show when there's an election -->
     <div v-if="currentElection" class="grid gap-4 mb-4 sm:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
       <VotersDistribution
-        :voted-count="votes.length"
+        :voted-count="uniqueVotersCount"
         :total-voters="voters.length"
       />
       <VotesOverTime
@@ -24,6 +24,7 @@
 </template>
 
 <script setup>
+import { computed } from 'vue';
 import CurrentElection from './components/CurrentElection.vue';
 import VotersDistribution from './components/VotersDistribution.vue';
 import VotesOverTime from './components/VotesOverTime.vue';
@@ -54,6 +55,15 @@ const props = defineProps({
     type: Array,
     default: () => []
   }
+});
+
+// Count unique voters from votes
+const uniqueVotersCount = computed(() => {
+  if (!props.votes || props.votes.length === 0) return 0;
+  
+  // Get unique voter IDs
+  const uniqueVoterIds = new Set(props.votes.map(vote => vote.voter_id));
+  return uniqueVoterIds.size;
 });
 </script>
 

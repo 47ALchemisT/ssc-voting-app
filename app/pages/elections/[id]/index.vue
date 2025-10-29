@@ -115,6 +115,7 @@
             <div class="flex justify-between items-center">
               <h3 class="font-medium text-gray-800">Vote Statistics</h3>
               <Button
+                v-if="authStore.isAdmin || electionStore.isElectionEnded(election)"
                 icon="pi pi-sync"
                 text
                 rounded
@@ -124,7 +125,31 @@
               />
             </div>
           </template>
-          <VoteStatistics :election-id="electionId" />
+          
+          <!-- Alert for non-admin users during ongoing election -->
+          <div v-if="!authStore.isAdmin && !electionStore.isElectionEnded(election)" class="p-6">
+            <Message 
+              severity="info"
+              :closable="false"
+              class="w-full"
+            >
+              <div class="flex items-start">
+                <i class="pi pi-info-circle text-xl mr-3 mt-1"></i>
+                <div class="flex-1">
+                  <h4 class="font-semibold text-gray-800 mb-2">Vote Statistics Hidden</h4>
+                  <p class="text-sm text-gray-600">
+                    Vote counts and candidate names are hidden during an ongoing election to ensure fairness and prevent influence on voting decisions.
+                  </p>
+                  <p class="text-sm text-gray-600 mt-2">
+                    Results will be available after the election period ends.
+                  </p>
+                </div>
+              </div>
+            </Message>
+          </div>
+          
+          <!-- Show statistics for admin or ended election -->
+          <VoteStatistics v-else :election-id="electionId" />
         </InfoCard>
       </div>
 
@@ -168,6 +193,7 @@ import EndElectionDialog from '~/components/election/EndElectionDialog.vue';
 import ElectionSettingsDialog from '~/components/election/ElectionSettingsDialog.vue'
 import AppBreadCrumbs from '~/components/AppBreadCrumbs.vue'
 import Loader from '~/components/Loader.vue'
+import Message from 'primevue/message'
 
 definePageMeta({
   middleware: 'auth',
@@ -299,7 +325,7 @@ const fetchCandidates = async () => {
       party: candidate.partylists?.name || 'Independent',
       partylist: candidate.partylists, // Include the full partylist object
       platform: candidate.platform || 'No platform information available',
-      photo: candidate.user?.avatar_url || 'https://via.placeholder.com/150',
+      photo: candidate.user?.avatar_url || null,
       user: candidate.user, // Keep the full user object if needed
       created_at: candidate.created_at // Include created_at if needed
     }))

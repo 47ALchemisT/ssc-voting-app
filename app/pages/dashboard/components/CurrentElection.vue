@@ -1,26 +1,26 @@
 <template>
     <div>
-        <!--Welcome-->
-        <div>
-            <h1 class="text-2xl font-semibold text-gray-800">
+        <!-- Welcome Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">
                 {{ isAdmin ? 'Admin Dashboard' : 'Voting Dashboard' }}
             </h1>
-            <p class="text-gray-500">
+            <p class="text-lg text-gray-600">
                 Welcome{{ user?.first_name ? `, ${user.first_name}` : '' }}! {{ isAdmin ? 'Manage elections and view statistics' : 'View and participate in active elections' }}
             </p>
         </div>
 
         <!-- Empty State - No Election -->
-        <div v-if="!currentElection" class="mt-6 bg-white rounded-lg border border-gray-200 p-12 text-center">
-            <div class="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                <i class="pi pi-calendar-times text-gray-400 text-4xl"></i>
+        <div v-if="!currentElection" class="mt-6 bg-gradient-to-br from-gray-50 to-slate-50 rounded-2xl border-2 border-dashed border-gray-300 p-12 text-center">
+            <div class="mx-auto w-32 h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mb-6">
+                <i class="pi pi-calendar-times text-gray-400 text-5xl"></i>
             </div>
-            <h3 class="text-lg font-medium text-gray-900 mb-2">No current election found</h3>
-            <p class="text-gray-500 mb-6">There are no active elections at the moment.</p>
+            <h3 class="text-2xl font-bold text-gray-900 mb-3">No Current Election</h3>
+            <p class="text-gray-600 mb-8 max-w-md mx-auto text-lg">There are no active elections at the moment. Check back later or create a new election to get started.</p>
             <NuxtLink 
                 v-if="isAdmin" 
                 to="/elections" 
-                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-xl text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 transition-all duration-200 transform hover:scale-105"
             >
                 <i class="pi pi-plus mr-2"></i>
                 Create Election
@@ -31,168 +31,230 @@
             <div class="grid gap-6 lg:gap-8 mt-6 lg:mt-8" :class="{ 'grid-cols-1 lg:grid-cols-2': isAdmin, 'grid-cols-1': !isAdmin }">
                 <!-- Left Column - Election Details -->
                 <div class="flex flex-col h-full">
-                    <div class="flex-1">
-                        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
-                            <div>
-                                <h1 class="text-sm text-gray-500">Current Election</h1>
-                                <h1 class="text-xl lg:text-2xl font-semibold text-gray-800">{{ currentElection.title }}</h1>
-                            </div>
-                            <div class="flex-shrink-0">
-                                <Tag class="capitalize" rounded :severity="currentElection.status === 'active' ? 'success' : 'warning'" :value="currentElection.status"/>
+                    <!-- Main Election Card -->
+                    <div class="bg-white rounded-2xl border border-gray-200 transition-shadow duration-300 overflow-hidden">
+                        <!-- Gradient Header -->
+                        <div class="bg-gradient-to-r from-blue-500 to-blue-600 p-6">
+                            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
+                                <div class="flex-1">
+                                    <p class="text-blue-100 text-sm font-medium uppercase tracking-wide mb-1">Current Election</p>
+                                    <h1 class="text-2xl lg:text-3xl font-bold text-white">{{ currentElection.title }}</h1>
+                                </div>
+                                <div class="flex-shrink-0">
+                                    <Tag class="capitalize !text-base !px-4 !py-2" rounded :severity="currentElection.status === 'active' ? 'success' : 'warning'" :value="currentElection.status"/>
+                                </div>
                             </div>
                         </div>
-                        <p class="text-gray-700 text-base lg:text-lg mt-2">{{ currentElection.description }}</p>
-                        <div class="mt-3 pt-3 border-t border-gray-200 flex flex-col sm:flex-row sm:space-x-4 space-y-2 sm:space-y-0 text-gray-500">
-                            <span class="flex items-center">
-                                <i class="pi pi-calendar mr-2"></i>
-                                Start: {{ formatDate(currentElection.start_date) }}
-                            </span>
-                            <span class="flex items-center">
-                                <i class="pi pi-calendar mr-2"></i>
-                                End: {{ formatDate(currentElection.end_date) }}
-                            </span>
+
+                        <!-- Content -->
+                        <div class="p-6">
+                            <p class="text-gray-700 text-base lg:text-lg leading-relaxed mb-4">{{ currentElection.description }}</p>
+                            
+                            <!-- Date Info -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-gray-200">
+                                <div class="flex items-start space-x-3 bg-blue-50 p-4 rounded-xl">
+                                    <div class="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                        <i class="pi pi-calendar-plus text-blue-600"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-gray-600 font-medium uppercase tracking-wide">Start Date</p>
+                                        <p class="text-sm font-semibold text-gray-900 mt-1">{{ formatDate(currentElection.start_date) }}</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-start space-x-3 bg-red-50 p-4 rounded-xl">
+                                    <div class="flex-shrink-0 w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                                        <i class="pi pi-calendar-minus text-red-600"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-gray-600 font-medium uppercase tracking-wide">End Date</p>
+                                        <p class="text-sm font-semibold text-gray-900 mt-1">{{ formatDate(currentElection.end_date) }}</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
                     <!-- Voting Status Card -->
-                    <div class="mt-6 p-4 border rounded-lg" :class="hasVoted ? 'bg-green-50 border-green-200' : 'bg-blue-50 border-blue-200'">
-                        <div v-if="loadingVoteStatus" class="flex items-center justify-center py-2">
-                            <i class="pi pi-spin pi-spinner text-lg text-gray-500 mr-2"></i>
-                            <span>Checking vote status...</span>
+                    <div class="mt-6 rounded-2xl overflow-hidden border-2" :class="hasVoted ? 'bg-gradient-to-br from-blue-50 to-blue-100 border-blue-300' : 'bg-gradient-to-br from-blue-50 to-blue-100 border-blue-300'">
+                        <div v-if="loadingVoteStatus" class="flex items-center justify-center py-8">
+                            <i class="pi pi-spin pi-spinner text-2xl text-gray-500 mr-3"></i>
+                            <span class="text-lg text-gray-700">Checking vote status...</span>
                         </div>
-                        <div v-else class="flex items-start">
-                            <div class="flex-shrink-0">
-                                <i v-if="hasVoted" class="pi pi-check-circle text-xl lg:text-2xl text-green-600 mr-3 mt-0.5"></i>
-                                <i v-else class="pi pi-exclamation-circle text-xl lg:text-2xl text-blue-600 mr-3 mt-0.5"></i>
-                            </div>
-                            <div class="w-full">
-                                <h3 class="font-medium text-sm lg:text-base" :class="hasVoted ? 'text-green-800' : 'text-blue-800'">
-                                    {{ hasVoted ? 'You have already voted' : 'Your vote is pending' }}
-                                </h3>
-                                <div v-if="!hasVoted" class="mt-2">
-                                    <p v-if="!isAdmin" class="text-sm text-blue-700 mb-2">Don't forget to cast your vote before {{ formatDate(currentElection.end_date) }}</p>
-                                    <Button
-                                        v-if="!isAdmin"
-                                        label="Cast Vote"
-                                        icon="pi pi-check-square"
-                                        size="small"
-                                        class="w-full sm:w-auto"
-                                        @click="$router.push(`/elections/${currentElection.id}`)"
-                                    />
-                                    <p v-else class="text-sm text-gray-600 italic">Administrators cannot cast votes in the election.</p>
+                        <div v-else class="p-6">
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0">
+                                    <div class="w-14 h-14 rounded-xl flex items-center justify-center" :class="hasVoted ? 'bg-blue-500' : 'bg-blue-500'">
+                                        <i v-if="hasVoted" class="pi pi-check-circle text-3xl text-white"></i>
+                                        <i v-else class="pi pi-exclamation-circle text-3xl text-white"></i>
+                                    </div>
                                 </div>
-                                <p v-else class="text-sm mt-1 text-green-700">
-                                    Thank you for participating in this election!
-                                </p>
-
+                                <div class="ml-4 flex-1">
+                                    <h3 class="text-xl font-bold mb-2" :class="hasVoted ? 'text-blue-900' : 'text-blue-900'">
+                                        {{ hasVoted ? 'Vote Successfully Cast' : 'Your Vote is Pending' }}
+                                    </h3>
+                                    <div v-if="!hasVoted">
+                                        <p v-if="!isAdmin" class="text-sm text-blue-800 mb-4 font-medium">Don't miss out! Cast your vote before <span class="font-bold">{{ formatDate(currentElection.end_date) }}</span></p>
+                                        <Button
+                                            v-if="!isAdmin"
+                                            label="Cast Your Vote Now"
+                                            icon="pi pi-check-square"
+                                            iconPos="right"
+                                            size="large"
+                                            class="w-full sm:w-auto !bg-blue-600 hover:!bg-blue-700 !border-blue-600 transition-all duration-200 transform hover:scale-105"
+                                            @click="$router.push(`/elections/${currentElection.id}`)"
+                                        />
+                                        <p v-else class="text-sm text-gray-600 italic bg-white/60 p-3 rounded-lg">
+                                            <i class="pi pi-info-circle mr-2"></i>
+                                            Administrators cannot cast votes in elections.
+                                        </p>
+                                    </div>
+                                    <div v-else class="bg-white/60 p-4 rounded-xl">
+                                        <p class="text-sm font-medium text-blue-800 flex items-center">
+                                            <i class="pi pi-check mr-2"></i>
+                                            Thank you for participating in this election! Your voice matters.
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Right Column - Admin Stats or User Info -->
-                <div v-if="isAdmin" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <!-- Admin Stats -->
-                    <div class="group bg-white rounded-lg border border-gray-200 p-4 lg:p-6 transition-all duration-300 hover:border-blue-500">
-                        <div class="flex justify-between">
-                            <h1 class="font-regular text-gray-500 group-hover:text-blue-500 transition-colors duration-200 text-sm lg:text-base">Total Candidates</h1>
+                <div v-if="isAdmin" class="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
+                    <!-- Admin Stats Cards -->
+                    <div class="group bg-gradient-to-br from-white to-blue-50 rounded-2xl border-2 border-gray-200 p-6 transition-all duration-300 hover:border-blue-500 cursor-pointer transform hover:-translate-y-1">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center group-hover:bg-blue-500 transition-colors duration-300">
+                                <i class="pi pi-users text-blue-600 text-2xl group-hover:text-white transition-colors duration-300"></i>
+                            </div>
                         </div>
-                        <h1 class="text-xl lg:text-2xl mt-1 font-bold text-gray-800 group-hover:text-blue-600 transition-colors duration-200">
+                        <h3 class="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2">Total Candidates</h3>
+                        <p class="text-4xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors duration-300">
                             {{ candidates.length }}
-                        </h1>
+                        </p>
                     </div>
-                    <div class="group bg-white rounded-lg border border-gray-200 p-4 lg:p-6 transition-all duration-300 hover:border-blue-500">
-                        <div class="flex justify-between">
-                            <h1 class="font-regular text-gray-500 group-hover:text-blue-500 transition-colors duration-200 text-sm lg:text-base">Total Voters</h1>
+
+                    <div class="group bg-gradient-to-br from-white to-blue-50 rounded-2xl border-2 border-gray-200 p-6 transition-all duration-300 hover:border-blue-500 cursor-pointer transform hover:-translate-y-1">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center group-hover:bg-blue-500 transition-colors duration-300">
+                                <i class="pi pi-user-plus text-blue-600 text-2xl group-hover:text-white transition-colors duration-300"></i>
+                            </div>
                         </div>
-                        <h1 class="text-xl lg:text-2xl mt-1 font-bold text-gray-800 group-hover:text-blue-600 transition-colors duration-200">
+                        <h3 class="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2">Total Voters</h3>
+                        <p class="text-4xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors duration-300">
                             {{ voters.length }}
-                        </h1>
+                        </p>
                     </div>
-                    <div class="group bg-white rounded-lg border border-gray-200 p-4 lg:p-6 transition-all duration-300 hover:border-blue-500">
-                        <div class="flex justify-between">
-                            <h1 class="font-regular text-gray-500 group-hover:text-blue-500 transition-colors duration-200 text-sm lg:text-base">Pending Approvals</h1>
+
+                    <div class="group bg-gradient-to-br from-white to-blue-50 rounded-2xl border-2 border-gray-200 p-6 transition-all duration-300 hover:border-blue-500 cursor-pointer transform hover:-translate-y-1">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center group-hover:bg-blue-500 transition-colors duration-300">
+                                <i class="pi pi-clock text-blue-600 text-2xl group-hover:text-white transition-colors duration-300"></i>
+                            </div>
                         </div>
-                        <h1 class="text-xl lg:text-2xl mt-1 font-bold text-gray-800 group-hover:text-blue-600 transition-colors duration-200">
+                        <h3 class="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2">Pending Approvals</h3>
+                        <p class="text-4xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors duration-300">
                             {{ pendingCandidates.length }}
-                        </h1>
+                        </p>
                     </div>
-                    <div class="group bg-white rounded-lg border border-gray-200 p-4 lg:p-6 transition-all duration-300 hover:border-blue-500">
-                        <div class="flex justify-between">
-                            <h1 class="font-regular text-gray-500 group-hover:text-blue-500 transition-colors duration-200 text-sm lg:text-base">Positions</h1>
+
+                    <div class="group bg-gradient-to-br from-white to-blue-50 rounded-2xl border-2 border-gray-200 p-6 transition-all duration-300 hover:border-blue-500 cursor-pointer transform hover:-translate-y-1">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center group-hover:bg-blue-500 transition-colors duration-300">
+                                <i class="pi pi-briefcase text-blue-600 text-2xl group-hover:text-white transition-colors duration-300"></i>
+                            </div>
                         </div>
-                        <h1 class="text-xl lg:text-2xl mt-1 font-bold text-gray-800 group-hover:text-blue-600 transition-colors duration-200">
+                        <h3 class="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2">Positions</h3>
+                        <p class="text-4xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors duration-300">
                             {{ positions.length }}
-                        </h1>
+                        </p>
                     </div>
                 </div>
 
                 <!-- User Election Info -->
-                <div v-else class="bg-white rounded-lg border border-gray-200 p-6">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Election Information</h3>
+                <div v-else class="bg-white rounded-2xl border border-gray-200 p-6 lg:p-8">
+                    <div class="flex items-center mb-6">
+                        <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mr-4">
+                            <i class="pi pi-info-circle text-blue-600 text-2xl"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold text-gray-900">Election Guide</h3>
+                    </div>
                     
-                    <div class="space-y-4">
-                        <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
-                            <h4 class="font-medium text-blue-800 flex items-center mb-2">
-                                <i class="pi pi-info-circle mr-2"></i>
+                    <div class="space-y-6">
+                        <!-- How to Vote Section -->
+                        <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-xl border-2 border-blue-200">
+                            <h4 class="font-bold text-blue-900 flex items-center mb-4 text-lg">
+                                <i class="pi pi-list-check mr-3 text-xl"></i>
                                 How to Vote
                             </h4>
-                            <ol class="text-sm text-gray-700 space-y-2 pl-4">
-                                <li class="flex items-start">
-                                    <span class="font-medium mr-2">1.</span>
-                                    <span>Click on the <span class="font-medium">Vote Now</span> button in the Quick Actions section</span>
+                            <ol class="space-y-3">
+                                <li class="flex items-start bg-white/60 p-3 rounded-lg">
+                                    <span class="flex-shrink-0 w-7 h-7 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold text-sm mr-3 mt-0.5">1</span>
+                                    <span class="text-gray-800">Click on the <span class="font-bold text-blue-700">Cast Your Vote Now</span> button above</span>
                                 </li>
-                                <li class="flex items-start">
-                                    <span class="font-medium mr-2">2.</span>
-                                    <span>Review the candidates for each position</span>
+                                <li class="flex items-start bg-white/60 p-3 rounded-lg">
+                                    <span class="flex-shrink-0 w-7 h-7 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold text-sm mr-3 mt-0.5">2</span>
+                                    <span class="text-gray-800">Review all candidates and their platforms carefully</span>
                                 </li>
-                                <li class="flex items-start">
-                                    <span class="font-medium mr-2">3.</span>
-                                    <span>Select your preferred candidate</span>
+                                <li class="flex items-start bg-white/60 p-3 rounded-lg">
+                                    <span class="flex-shrink-0 w-7 h-7 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold text-sm mr-3 mt-0.5">3</span>
+                                    <span class="text-gray-800">Select your preferred candidate for each position</span>
                                 </li>
-                                <li class="flex items-start">
-                                    <span class="font-medium mr-2">4.</span>
-                                    <span>Review your selections and submit your vote</span>
+                                <li class="flex items-start bg-white/60 p-3 rounded-lg">
+                                    <span class="flex-shrink-0 w-7 h-7 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold text-sm mr-3 mt-0.5">4</span>
+                                    <span class="text-gray-800">Review your selections and submit your final vote</span>
                                 </li>
                             </ol>
                         </div>
 
-                        <div class="border-t border-gray-100 pt-4">
-                            <h4 class="font-medium text-gray-800 mb-2">Important Dates</h4>
-                            <ul class="text-sm space-y-2">
-                                <li class="flex justify-between">
-                                    <span class="text-gray-600">Voting Period:</span>
-                                    <span class="font-medium">
-                                        {{ formatDate(currentElection.start_date) }} - {{ formatDate(currentElection.end_date) }}
+                        <!-- Important Dates -->
+                        <div class="border-2 border-gray-200 rounded-xl p-6 bg-gradient-to-br from-gray-50 to-slate-50">
+                            <h4 class="font-bold text-gray-900 mb-4 text-lg flex items-center">
+                                <i class="pi pi-calendar mr-3 text-xl text-gray-700"></i>
+                                Important Dates
+                            </h4>
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center bg-white p-4 rounded-lg border border-gray-200">
+                                    <span class="text-gray-700 font-medium">Voting Period:</span>
+                                    <span class="font-bold text-gray-900 text-right">
+                                        {{ formatDate(currentElection.start_date) }}<br/>
+                                        <span class="text-sm text-gray-600">to</span><br/>
+                                        {{ formatDate(currentElection.end_date) }}
                                     </span>
-                                </li>
-                                <li class="flex justify-between">
-                                    <span class="text-gray-600">Results Announcement:</span>
-                                    <span class="font-medium">
+                                </div>
+                                <div class="flex justify-between items-center bg-white p-4 rounded-lg border border-gray-200">
+                                    <span class="text-gray-700 font-medium">Results Announcement:</span>
+                                    <span class="font-bold text-gray-900">
                                         {{ currentElection.end_date ? 
                                             formatDate(new Date(currentElection.end_date).setDate(new Date(currentElection.end_date).getDate() + 1)) : 
                                             'TBD' }}
                                     </span>
-                                </li>
-                            </ul>
+                                </div>
+                            </div>
                         </div>
 
-                        <div class="bg-gray-50 p-4 rounded-lg mt-4">
-                            <h4 class="font-medium text-gray-800 mb-2 flex items-center">
-                                <i class="pi pi-question-circle mr-2"></i>
+                        <!-- Help Section -->
+                        <div class="bg-gradient-to-br from-amber-50 to-orange-50 p-6 rounded-xl border-2 border-amber-200">
+                            <h4 class="font-bold text-amber-900 mb-4 flex items-center text-lg">
+                                <i class="pi pi-question-circle mr-3 text-xl"></i>
                                 Need Help?
                             </h4>
-                            <p class="text-sm text-gray-600 mb-2">If you have any questions or encounter any issues while voting, please contact:</p>
-                            <ul class="text-sm space-y-1">
-                                <li class="flex items-center">
-                                    <i class="pi pi-envelope mr-2 text-gray-500"></i>
-                                    <a href="mailto:election@ssc.edu" class="text-blue-600 hover:underline">election@ssc.edu</a>
-                                </li>
-                                <li class="flex items-center">
-                                    <i class="pi pi-phone mr-2 text-gray-500"></i>
-                                    <span class="text-gray-700">(123) 456-7890</span>
-                                </li>
-                            </ul>
+                            <p class="text-sm text-gray-700 mb-4">If you have any questions or encounter issues while voting, please contact:</p>
+                            <div class="space-y-3">
+                                <a href="mailto:election@ssc.edu" class="flex items-center bg-white p-3 rounded-lg border border-gray-200 hover:border-blue-500 transition-all group">
+                                    <div class="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center mr-3 group-hover:bg-amber-200 transition-colors">
+                                        <i class="pi pi-envelope text-amber-600 text-lg"></i>
+                                    </div>
+                                    <span class="text-blue-600 hover:underline font-medium">election@ssc.edu</span>
+                                </a>
+                                <div class="flex items-center bg-white p-3 rounded-lg">
+                                    <div class="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center mr-3">
+                                        <i class="pi pi-phone text-amber-600 text-lg"></i>
+                                    </div>
+                                    <span class="text-gray-800 font-medium">(123) 456-7890</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -200,6 +262,7 @@
         </div>
     </div>
 </template>
+
 <script setup>
 import { defineProps, computed, ref, onMounted } from 'vue';
 import { useAuthStore } from '../../../../stores/auth';
@@ -273,6 +336,4 @@ const formatDate = (dateString) => {
     return 'Invalid date';
   }
 };
-
-
 </script>

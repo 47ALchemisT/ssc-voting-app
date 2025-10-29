@@ -39,10 +39,12 @@
       <Column field="name" header="Candidate" style="min-width: 250px">
         <template #body="{ data }">
           <div class="flex items-center gap-3">
-            <Avatar :image="data.photo || 'https://via.placeholder.com/40'" 
-                   shape="circle" 
-                   size="large" 
-                   class="bg-gray-100" />
+            <div v-if="data.photo" class="w-10 h-10 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
+              <img :src="data.photo" :alt="data.name" class="w-full h-full object-cover" />
+            </div>
+            <div v-else class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center flex-shrink-0">
+              <span class="text-white font-bold text-lg">{{ getInitials(data.name) }}</span>
+            </div>
             <div>
               <div class="font-medium">{{ data.name }}</div>
             </div>
@@ -102,6 +104,14 @@ console.log('flattenedCandidates', props.flattenedCandidates);
 console.log('groupedCandidates', props.groupedCandidates);
 
 const emit = defineEmits(['view-candidate']);
+
+// Get initials from name
+const getInitials = (name) => {
+  if (!name) return 'U';
+  const parts = name.trim().split(' ');
+  if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+};
 
 // Status severity mapping
 const getStatusSeverity = (status) => {
