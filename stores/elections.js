@@ -131,7 +131,28 @@ export const useElectionStore = defineStore('elections', () => {
       // First get distinct position_ids from candidacy_application for this election
       const { data: candidatePositions, error: cpErr } = await supabase
         .from('candidacy_application')
-        .select('position_id')
+        .select(`
+          id,
+          position_id,
+          position:position_id (
+            id,
+            title,
+            description,
+            order
+          ),
+          partylist:partylists_id (
+            name
+          ),
+          user_profile:user_id (
+            first_name,
+            last_name,
+            college: college_id (
+              college_name,
+              alias
+            ),
+            avatar_url
+          )
+        `)
         .eq('election_id', electionId)
         .not('position_id', 'is', null);
 

@@ -139,11 +139,15 @@ export const useVoteStore = defineStore('votes', () => {
             description,
             order
           ),
+          partylist:partylists_id (
+            name
+          ),
           user_profile:user_id (
             first_name,
             last_name,
             college: college_id (
-              college_name
+              college_name,
+              alias
             ),
             avatar_url
           )
@@ -180,7 +184,9 @@ export const useVoteStore = defineStore('votes', () => {
           id: candidate.id,
           name: fullName,
           avatar_url: candidate.user_profile?.avatar_url || null,
-          vote_count: voteCounts[candidate.id] || 0
+          college: candidate.user_profile?.college?.college_name || null,
+          vote_count: voteCounts[candidate.id] || 0,
+          partylist: candidate.partylist?.name || null
         });
       });
       

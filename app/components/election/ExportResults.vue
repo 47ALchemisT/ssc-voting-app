@@ -43,7 +43,12 @@
                   </thead>
                   <tbody>
                     <tr v-for="candidate in position.candidates" :key="candidate.id" class="border-b">
-                      <td class="p-2">{{ candidate.name || 'Unnamed Candidate' }}</td>
+                      <td class="p-2">
+                        <div class="font-medium">{{ candidate.name || 'Unnamed Candidate' }}</div>
+                        <div v-if="candidate.partylist" class="text-xs text-gray-500">
+                          {{ candidate.partylist }}
+                        </div>
+                      </td>
                       <td class="text-right p-2">{{ candidate.vote_count || 0 }}</td>
                       <td class="text-right p-2">
                         {{ calculatePercentage(candidate.vote_count, getTotalVotes(position.candidates)) }}%
@@ -205,10 +210,10 @@ const exportToPdf = async () => {
       '    <div style="width: 80px; height: 80px; display: flex; align-items: center; justify-content: flex-end;">',
       '      <img src="' + sscLogo.src + '" style="max-width: 100%; max-height: 80px; object-fit: contain;" alt="SSC Logo">',
       '    </div>',
-      '  </div>'
+      '  </div>',
     ].join('');
 
-    // Add each position's results as a table
+// Add each position's results as a table
     if (Array.isArray(props.positions)) {
       props.positions.forEach((position) => {
         if (!position) return;
@@ -223,43 +228,34 @@ const exportToPdf = async () => {
             '<h2 style="font-size: 16px; color: #3c3c3c; font-weight: 600; margin: 0 0 10px 0; padding: 8px 0;">' +
               positionName +
             '</h2>' +
-            '<div style="overflow-x: auto;">' +
-              '<table style="width: 100%; border-collapse: collapse; margin-bottom: 10px; border: 1px solid #3c3c3c;">' +
-                '<thead>' +
-                  '<tr style="background-color: #f1f5f9;">' +
-                    '<th style="text-align: left; padding: 5px; font-weight: 600; border: 1px solid #3c3c3c;">Candidate</th>' +
-                    '<th style="text-align: left; padding: 5px; font-weight: 600; border: 1px solid #3c3c3c;">Votes</th>' +
-                    '<th style="text-align: left; padding: 5px; font-weight: 600; border: 1px solid #3c3c3c;">Percentage</th>' +
-                  '</tr>' +
-                '</thead>' +
-                '<tbody>';
-
-        // Generate candidate rows
-        const candidateRows = sortedCandidates
-          .filter(candidate => candidate) // Filter out null/undefined candidates
-          .map((candidate, index) => {
-            const voteCount = candidate.vote_count || 0;
-            const percentage = calculatePercentage(voteCount, totalVotes);
-            const rowStyle = index % 2 === 0 ? 'background-color: #ffffff;' : '';
-            
-            return [
-              '<tr style="' + rowStyle + '">',
-              '  <td style="padding: 5px; border: 1px solid #3c3c3c;">' + (candidate.name || 'Unnamed Candidate') + '</td>',
-              '  <td style="text-align: left; padding: 5px; border: 1px solid #3c3c3c;">' + voteCount + '</td>',
-              '  <td style="text-align: left; padding: 5px; border: 1px solid #3c3c3c;">' + percentage + '%</td>',
-              '</tr>'
-            ].join('');
-          });
-          
-        htmlContent += candidateRows.join('');
-
-        // Close table elements
-        htmlContent += [
-          '      </tbody>',
-          '    </table>',
-          '  </div>',
-          '</div>'
-        ].join('');
+            '<table style="width: 100%; border-collapse: collapse; margin-bottom: 10px; border: 1px solid #3c3c3c;">' +
+              '<thead>' +
+                '<tr style="background-color: #f1f5f9;">' +
+                  '<th style="text-align: left; padding: 5px; font-weight: 600; border: 1px solid #3c3c3c; width: 60%;">Candidate</th>' +
+                  '<th style="text-align: left; padding: 5px; font-weight: 600; border: 1px solid #3c3c3c; width: 20%;">Partylist</th>' +
+                  '<th style="text-align: right; padding: 5px; font-weight: 600; border: 1px solid #3c3c3c; width: 10%;">Votes</th>' +
+                  '<th style="text-align: right; padding: 5px; font-weight: 600; border: 1px solid #3c3c3c; width: 10%;">%</th>' +
+                '</tr>' +
+              '</thead>' +
+              '<tbody>' +
+                sortedCandidates.map(candidate => {
+                  const name = candidate.name || 'Unnamed Candidate';
+                  const partylist = candidate.partylist || 'Independent';
+                  const votes = candidate.vote_count || 0;
+                  const percentage = calculatePercentage(votes, totalVotes);
+                  
+                  return (
+                    '<tr style="border-bottom: 1px solid #3c3c3c;">' +
+                    `  <td style="padding: 5px; border-right: 1px solid #3c3c3c;">${name}</td>` +
+                    `  <td style="padding: 5px; border-right: 1px solid #3c3c3c; color: #666; font-size: 12px;">${partylist}</td>` +
+                    `  <td style="text-align: right; padding: 5px; border-right: 1px solid #3c3c3c;">${votes}</td>` +
+                    `  <td style="text-align: right; padding: 5px;">${percentage}%</td>` +
+                    '</tr>'
+                  );
+                }).join('') +
+              '</tbody>' +
+            '</table>' +
+          '</div>';
       });
     }
 

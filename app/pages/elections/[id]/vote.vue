@@ -1,142 +1,285 @@
 <template>
-  <div class="max-w-4xl mx-auto p-6">
+  <div class="min-h-screen bg-gray-50">
     <Toast />
-    <!-- Header -->
-    <div class="text-center mb-8">
-      <h1 class="text-2xl font-bold text-gray-900">{{ election?.title || 'Election' }}</h1>
-      <p class="text-gray-600 mt-2">Cast your vote for each position</p>
-      
-      <div class="mt-4 p-4 bg-blue-50 rounded-lg text-left">
-        <h3 class="font-medium text-blue-800">Voting Instructions</h3>
-        <ul class="list-disc list-inside text-sm text-blue-700 mt-2 space-y-1">
-          <li>Select one candidate per position</li>
-          <li>Review your choices before submitting</li>
-          <li>You cannot change your vote after submission</li>
-        </ul>
-      </div>
-    </div>
-
-    <!-- Loading State -->
-    <div v-if="loading" class="text-center py-12">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mx-auto"></div>
-      <p class="mt-2 text-gray-600">Loading voting form...</p>
-    </div>
-
-    <!-- Error State -->
-
-    <!-- Voting Form -->
-    <div v-else class="space-y-8">
-      <div v-for="position in positions" :key="position.id" class="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
-          <div class="flex justify-between items-center">
+    
+    <!-- Guidelines Modal -->
+    <Dialog 
+      v-model:visible="showGuidelines" 
+      :modal="true" 
+      :closable="false"
+      :closeOnEscape="false"
+      :style="{ width: '90vw', maxWidth: '600px' }"
+      header="Voting Guidelines"
+    >
+      <div class="space-y-4">
+        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
+          <div class="flex items-start">
+            <i class="pi pi-info-circle text-blue-500 mt-1 mr-3"></i>
             <div>
-              <h3 class="text-lg font-medium text-gray-900">{{ position.name }}</h3>
-              <p class="text-sm text-gray-500">
-                {{ position.max_candidate > 1 ? `Select up to ${position.max_candidate} candidates` : 'Select one candidate' }}
-                <span :class="{
-                  'text-blue-600 font-medium': getSelectedCandidatesCount(position.id) > 0 && getSelectedCandidatesCount(position.id) <= position.max_candidate,
-                  'text-red-600 font-medium': getSelectedCandidatesCount(position.id) > position.max_candidate
-                }">
-                  ({{ getSelectedCandidatesCount(position.id) }}/{{ position.max_candidate }} selected)
-                </span>
-                <span v-if="getSelectedCandidatesCount(position.id) > position.max_candidate" class="text-red-500 text-xs block mt-1">
-                  Please select at most {{ position.max_candidate }} {{ position.max_candidate === 1 ? 'candidate' : 'candidates' }}
-                </span>
+              <h4 class="font-semibold text-blue-800 mb-2">Important Instructions</h4>
+              <ul class="space-y-2 text-sm text-blue-700">
+                <li class="flex items-start">
+                  <span class="mr-2">•</span>
+                  <span>You must vote for <strong>all positions</strong> to complete your ballot</span>
+                </li>
+                <li class="flex items-start">
+                  <span class="mr-2">•</span>
+                  <span>Select the specified number of candidates for each position</span>
+                </li>
+                <li class="flex items-start">
+                  <span class="mr-2">•</span>
+                  <span>Review your selections carefully before submitting</span>
+                </li>
+                <li class="flex items-start">
+                  <span class="mr-2">•</span>
+                  <span><strong>Your vote cannot be changed</strong> after submission</span>
+                </li>
+                <li class="flex items-start">
+                  <span class="mr-2">•</span>
+                  <span>Click on a candidate card to select or deselect them</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-amber-50 border-l-4 border-amber-500 p-4 rounded">
+          <div class="flex items-start">
+            <i class="pi pi-exclamation-triangle text-amber-600 mt-1 mr-3"></i>
+            <div>
+              <h4 class="font-semibold text-amber-800 mb-2">Before You Proceed</h4>
+              <p class="text-sm text-amber-700">
+                Make sure you have reviewed all candidates and their platforms. 
+                Take your time to make informed decisions.
               </p>
             </div>
           </div>
         </div>
-        
-        <div class="divide-y divide-gray-200">
-          <div 
-            v-for="candidate in getCandidatesByPosition(position.id)" 
-            :key="candidate.id"
-            class="px-6 py-4 hover:bg-gray-50 transition-colors cursor-pointer"
-            :class="{ 'bg-blue-50': isCandidateSelected(position.id, candidate.id) }"
-            @click="toggleCandidate(position, candidate.id)"
-          >
-            <div class="flex items-center">
-              <div class="flex-shrink-0 h-36 w-36 rounded-lg bg-blue-100 flex items-center justify-center">
-                <img :src="candidate.avatar_url || candidate.user?.avatar_url || '/images/avatar/default.png'" alt="Candidate Avatar" class="h-full w-full object-cover rounded-lg">
-              </div>
-              <div class="ml-4 flex justify-between w-full">
+
+        <div class="flex items-center space-x-2 pt-2">
+          <Checkbox v-model="acknowledgedGuidelines" inputId="acknowledge" binary />
+          <label for="acknowledge" class="text-sm text-gray-700">
+            I have read and understood the voting guidelines
+          </label>
+        </div>
+      </div>
+      
+      <template #footer>
+        <Button 
+          label="Continue to Vote" 
+          icon="pi pi-arrow-right"
+          iconPos="right"
+          :disabled="!acknowledgedGuidelines"
+          @click="startVoting"
+          class="w-full"
+        />
+      </template>
+    </Dialog>
+
+    <!-- Main Content -->
+    <div class="max-w-5xl mx-auto p-4 sm:p-6 lg:p-8">
+      <!-- Header -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+        <div class="text-center">
+          <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
+            <i class="pi pi-check-square text-2xl text-blue-600"></i>
+          </div>
+          <h1 class="text-3xl font-bold text-gray-900 mb-2">{{ election?.title || 'Election' }}</h1>
+          <p class="text-gray-600">Cast your vote for each position</p>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div v-if="loading" class="bg-white rounded-lg shadow-sm border border-gray-200 p-12">
+        <div class="text-center">
+          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+          <p class="mt-4 text-gray-600">Loading voting form...</p>
+        </div>
+      </div>
+
+      <!-- Voting Form -->
+      <div v-else class="space-y-6">
+        <!-- Progress Card -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Voting Progress</h3>
+            <span class="text-2xl font-bold" :class="{ 
+              'text-red-600': hasExceededMaxCandidates, 
+              'text-blue-600': !hasExceededMaxCandidates && validVotedPositionsCount < positions.length,
+              'text-green-600': !hasExceededMaxCandidates && validVotedPositionsCount === positions.length
+            }">
+              {{ Math.round((validVotedPositionsCount / positions.length) * 100) }}%
+            </span>
+          </div>
+          <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+            <div 
+              class="h-3 rounded-full transition-all duration-500" 
+              :style="{ width: `${(validVotedPositionsCount / positions.length) * 100}%` }"
+              :class="{ 
+                'bg-red-500': hasExceededMaxCandidates,
+                'bg-blue-500': !hasExceededMaxCandidates && validVotedPositionsCount < positions.length,
+                'bg-green-500': !hasExceededMaxCandidates && validVotedPositionsCount === positions.length
+              }"
+            ></div>
+          </div>
+          <p class="text-sm text-gray-600 mt-2">
+            {{ validVotedPositionsCount }} of {{ positions.length }} positions completed
+            <span v-if="hasExceededMaxCandidates" class="text-red-600 font-medium ml-2">
+              • Please review your selections
+            </span>
+          </p>
+        </div>
+
+        <!-- Position Cards -->
+        <div v-for="(position, index) in positions" :key="position.id" class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          <!-- Position Header -->
+          <div class="px-6 py-4 border-b border-gray-200"
+               :class="{
+                 'bg-blue-50': getSelectedCandidatesCount(position.id) > 0 && getSelectedCandidatesCount(position.id) <= position.max_candidate,
+                 'bg-red-50': getSelectedCandidatesCount(position.id) > position.max_candidate,
+                 'bg-gray-50': getSelectedCandidatesCount(position.id) === 0
+               }">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-3">
+                <div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-white"
+                     :class="{
+                       'bg-blue-500': getSelectedCandidatesCount(position.id) > 0 && getSelectedCandidatesCount(position.id) <= position.max_candidate,
+                       'bg-red-500': getSelectedCandidatesCount(position.id) > position.max_candidate,
+                       'bg-gray-400': getSelectedCandidatesCount(position.id) === 0
+                     }">
+                  {{ index + 1 }}
+                </div>
                 <div>
-                  <h4 class="text-base font-medium text-gray-900">{{ candidate.name || 'Unknown Candidate' }}</h4>
-                  <p class="text-sm text-gray-500">Running for {{ position.name }}</p>
-                  <div v-if="candidate.platform && typeof candidate.platform === 'string'" class="mt-3 text-sm text-gray-600">
-                    <p class="font-medium text-gray-800">Platform:</p>
-                    <p v-if="!expandedPlatforms[candidate.id]" class="mt-1 text-gray-600 line-clamp-2">{{ candidate.platform }}</p>
-                    <p v-else class="mt-1 text-gray-600">{{ candidate.platform }}</p>
-                    <span
-                      class="mt-1 p-0 text-blue-500 font-medium"
-                      @click.stop="togglePlatform(candidate.id)"
-                    >
-                      {{ expandedPlatforms[candidate.id] ? 'See less' : 'See more' }}
+                  <h3 class="text-lg font-semibold text-gray-900">{{ position.name }}</h3>
+                  <p class="text-sm text-gray-600">
+                    {{ position.max_candidate > 1 ? `Select up to ${position.max_candidate} candidates` : 'Select one candidate' }}
+                  </p>
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium"
+                     :class="{
+                       'bg-blue-100 text-blue-700': getSelectedCandidatesCount(position.id) > 0 && getSelectedCandidatesCount(position.id) <= position.max_candidate,
+                       'bg-red-100 text-red-700': getSelectedCandidatesCount(position.id) > position.max_candidate,
+                       'bg-gray-100 text-gray-600': getSelectedCandidatesCount(position.id) === 0
+                     }">
+                  <i class="pi mr-1.5"
+                     :class="{
+                       'pi-check-circle': getSelectedCandidatesCount(position.id) === position.max_candidate && getSelectedCandidatesCount(position.id) <= position.max_candidate,
+                       'pi-exclamation-circle': getSelectedCandidatesCount(position.id) > position.max_candidate,
+                       'pi-circle': getSelectedCandidatesCount(position.id) === 0
+                     }"></i>
+                  {{ getSelectedCandidatesCount(position.id) }}/{{ position.max_candidate }}
+                </div>
+                <p v-if="getSelectedCandidatesCount(position.id) > position.max_candidate" class="text-xs text-red-600 mt-1">
+                  Too many selected
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Candidates Grid -->
+          <div class="p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div 
+              v-for="candidate in getCandidatesByPosition(position.id)" 
+              :key="candidate.id"
+              class="relative border-2 rounded-lg p-4 cursor-pointer transition-all hover:shadow-md"
+              :class="{ 
+                'border-blue-500 bg-blue-50': isCandidateSelected(position.id, candidate.id),
+                'border-gray-200 hover:border-gray-300': !isCandidateSelected(position.id, candidate.id)
+              }"
+              @click="toggleCandidate(position, candidate.id)"
+            >
+              <!-- Selection Indicator -->
+              <div class="absolute top-3 right-3 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all"
+                   :class="{ 
+                     'bg-blue-500 border-blue-500': isCandidateSelected(position.id, candidate.id), 
+                     'border-gray-300 bg-white': !isCandidateSelected(position.id, candidate.id) 
+                   }">
+                <i v-if="isCandidateSelected(position.id, candidate.id)" class="pi pi-check text-white text-xs"></i>
+              </div>
+
+              <div class="flex items-start space-x-4">
+                <!-- Avatar -->
+                <div class="flex-shrink-0">
+                  <div v-if="candidate.avatar_url" class="w-20 h-20 rounded-lg overflow-hidden border-2 border-gray-200">
+                    <img :src="candidate.avatar_url" alt="Candidate Avatar" class="w-full h-full object-cover">
+                  </div>
+                  <div v-else class="w-20 h-20 rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center border-2 border-blue-200">
+                    <span class="text-2xl font-bold text-white">
+                      {{ getInitials(candidate.name) }}
                     </span>
                   </div>
                 </div>
-                <!--checkbox-->
-                <div class="ml-4">
-                  <div class="h-5 w-5 rounded-full border-2 flex items-center justify-center"
-                       :class="{ 
-                         'bg-blue-500 border-blue-500': isCandidateSelected(position.id, candidate.id), 
-                         'border-gray-300': !isCandidateSelected(position.id, candidate.id) 
-                       }">
-                    <i v-if="isCandidateSelected(position.id, candidate.id)" class="pi pi-check text-white text-xs"></i>
+
+                <!-- Candidate Info -->
+                <div class="flex-1 min-w-0">
+                  <h4 class="text-base font-semibold text-gray-900 truncate">{{ candidate.name || 'Unknown Candidate' }}</h4>
+                  <p class="text-sm text-gray-500 mb-1">{{ position.name }}</p>
+                  
+                  <!-- Partylist and College Info -->
+                  <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600 mt-2">
+                    <div class="flex items-center">
+                      <i class="pi pi-flag mr-1 text-blue-500"></i>
+                      <span>{{ candidate.partylist || 'No Partylist' }}</span>
+                    </div>
+                    <div class="flex items-center">
+                      <i class="pi pi-building mr-1 text-green-500"></i>
+                      <span>{{ candidate.college || 'No College' }}</span>
+                    </div>
+                  </div>
+                  
+                  <!-- Platform Preview -->
+                  <div v-if="candidate.platform && typeof candidate.platform === 'string'" class="mt-2">
+                    <p class="text-xs font-medium text-gray-700 mb-1">Platform:</p>
+                    <p v-if="!expandedPlatforms[candidate.id]" class="text-xs text-gray-600 line-clamp-2">
+                      {{ candidate.platform }}
+                    </p>
+                    <p v-else class="text-xs text-gray-600">
+                      {{ candidate.platform }}
+                    </p>
+                    <button
+                      class="text-xs text-blue-600 hover:text-blue-700 font-medium mt-1 focus:outline-none"
+                      @click.stop="togglePlatform(candidate.id)"
+                    >
+                      {{ expandedPlatforms[candidate.id] ? 'Show less' : 'Read more' }}
+                    </button>
                   </div>
                 </div>
               </div>
             </div>
-
-          </div>
-          
-          <!-- No candidates -->
-          <div v-if="getCandidatesByPosition(position.id).length === 0" class="px-6 py-4 text-center text-gray-500">
-            No candidates running for this position
+            
+            <!-- No candidates -->
+            <div v-if="getCandidatesByPosition(position.id).length === 0" class="col-span-full text-center py-8 text-gray-500">
+              <i class="pi pi-inbox text-3xl mb-2"></i>
+              <p>No candidates running for this position</p>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Submit Button -->
-      <div class="sticky bottom-0 bg-white border rounded-lg border-gray-200 -mx-6 p-4 shadow-sm">
-        <div class="max-w-4xl mx-auto">
-          <div class="flex flex-col space-y-2">
-            <!-- Voting Progress -->
-            <div class="w-full bg-gray-200 rounded-full h-2.5">
-              <div 
-                class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" 
-                :style="{ width: `${(validVotedPositionsCount / positions.length) * 100}%` }"
-                :class="{ 'bg-red-500': hasExceededMaxCandidates }"
-              ></div>
-            </div>
-            <div class="flex justify-between items-center">
-              <p class="text-sm text-gray-600">
-                {{ validVotedPositionsCount }} of {{ positions.length }} positions voted
+        <!-- Submit Section -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky bottom-4">
+          <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="text-center sm:text-left">
+              <p class="text-sm font-medium text-gray-900">
+                Ready to submit your votes?
               </p>
-              <span class="text-sm font-medium" :class="{ 'text-red-600': hasExceededMaxCandidates, 'text-gray-900': !hasExceededMaxCandidates }">
-                {{ Math.round((validVotedPositionsCount / positions.length) * 100) }}% Complete
-              </span>
-            </div>
-          </div>
-          
-          <div class="mt-4 flex justify-between items-center">
-            <div>
-                  <p class="text-sm text-gray-500">
-                {{ positions.length - votedPositionsCount }} more positions to vote
-              </p>
-              <p class="text-xs text-gray-500">
-                Please vote for all positions before submitting
-                <span v-if="hasExceededMaxCandidates" class="text-red-500 block mt-1">
-                  You've selected too many candidates for one or more positions.
+              <p class="text-xs text-gray-500 mt-1">
+                {{ positions.length - validVotedPositionsCount }} more {{ positions.length - validVotedPositionsCount === 1 ? 'position' : 'positions' }} to complete
+                <span v-if="hasExceededMaxCandidates" class="text-red-600 block mt-1">
+                  • Please review your selections
                 </span>
               </p>
             </div>
             <Button 
               label="Submit Votes"
               icon="pi pi-check-circle"
+              iconPos="right"
               :disabled="!allPositionsVoted || isSubmitting"
               :loading="isSubmitting"
               @click="submitVotes"
+              size="large"
+              class="w-full sm:w-auto"
             />
           </div>
         </div>
@@ -146,13 +289,16 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useVoteStore } from '../../../../stores/votes';
 import { useAuthStore } from '../../../../stores/auth';
 import { useElectionStore } from '../../../../stores/elections';
 import { useToast } from 'primevue/usetoast';
 import Toast from 'primevue/toast';
+import Dialog from 'primevue/dialog';
+import Button from 'primevue/button';
+import Checkbox from 'primevue/checkbox';
 
 const route = useRoute();
 const router = useRouter();
@@ -165,13 +311,26 @@ const electionId = route.params.id;
 const election = ref(null);
 const positions = ref([]);
 const candidates = ref([]);
-// Store votes as { positionId: [candidateId1, candidateId2, ...] }
 const selectedVotes = ref({});
 const loading = ref(true);
 const isSubmitting = ref(false);
 const error = ref(null);
-// Track expanded/collapsed state per candidate for platform text
 const expandedPlatforms = ref({});
+const showGuidelines = ref(true);
+const acknowledgedGuidelines = ref(false);
+
+// Get initials from name
+const getInitials = (name) => {
+  if (!name) return 'U';
+  const parts = name.trim().split(' ');
+  if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+};
+
+// Start voting after acknowledging guidelines
+const startVoting = () => {
+  showGuidelines.value = false;
+};
 
 // Computed
 const getCandidatesByPosition = (positionId) => {
@@ -179,46 +338,54 @@ const getCandidatesByPosition = (positionId) => {
     console.warn('Candidates data is not available or not an array');
     return [];
   }
-
-  console.log('Filtering candidates for position ID:', positionId);
-  console.log('All candidates:', JSON.parse(JSON.stringify(candidates.value)));
   
   const filtered = candidates.value.filter(candidate => {
-    const matches = 
-      candidate.position_id === positionId || 
-      (candidate.position && candidate.position.id === positionId);
-    
-    console.log(`Candidate ${candidate.id} matches position ${positionId}:`, matches, 
-      'position_id:', candidate.position_id, 
-      'position object:', candidate.position);
-      
-    return matches;
+    return candidate.position_id === positionId || 
+           (candidate.position && candidate.position.id === positionId);
   });
-  
-  console.log(`Found ${filtered.length} candidates for position ${positionId}:`, filtered);
   
   const mappedCandidates = filtered.map(candidate => {
     const positionTitle = candidate.position?.title || 
                          (candidate.position_id ? `Position ${candidate.position_id}` : 'Unknown Position');
     
-    const user = candidate.user || {};
-    const fullName = [user.first_name, user.last_name]
-      .filter(Boolean)
-      .join(' ')
-      .trim() || 'Unknown Candidate';
+    // Get name from user_profile first, then user
+    const fullName = candidate.name || 
+                    `${candidate.user_profile?.first_name || candidate.user?.first_name || ''} ${candidate.user_profile?.last_name || candidate.user?.last_name || ''}`.trim() || 
+                    'Unknown Candidate';
+    
+    // Get partylist name - it's already in the correct format from the API
+    const partylistName = candidate.partylist?.name || 'No Partylist';
+    
+    // Get college name from user_profile.college
+    const collegeName = candidate.user_profile?.college?.college_name || 
+                       candidate.user_profile?.college?.alias || 
+                       candidate.user?.college?.college_name ||
+                       'No College';
+    
+    // Use avatar_url from user_profile if available
+    const avatarUrl = candidate.user_profile?.avatar_url || 
+                     candidate.avatar_url || 
+                     candidate.user?.avatar_url || 
+                     '/images/avatar/default.png';
     
     return {
       id: candidate.id,
       name: fullName,
-      avatar_url: candidate.avatar_url,
+      avatar_url: avatarUrl,
       position_id: candidate.position_id || (candidate.position?.id || null),
       position: positionTitle,
+      partylist: partylistName,
+      college: collegeName,
       platform: candidate.platform || 'No platform provided',
-      user: user
+      user: {
+        ...candidate.user,
+        first_name: candidate.user?.first_name || candidate.user_profile?.first_name,
+        last_name: candidate.user?.last_name || candidate.user_profile?.last_name,
+        avatar_url: avatarUrl
+      }
     };
   });
   
-  console.log('Mapped candidates:', mappedCandidates);
   return mappedCandidates;
 };
 
@@ -226,22 +393,19 @@ const getCandidatesByPosition = (positionId) => {
 const togglePlatform = (id) => {
   expandedPlatforms.value[id] = !expandedPlatforms.value[id];
 };
-// Check if a candidate is selected for a position
+
 const isCandidateSelected = (positionId, candidateId) => {
   return selectedVotes.value[positionId]?.includes(candidateId) || false;
 };
 
-// Get the number of selected candidates for a position
 const getSelectedCandidatesCount = (positionId) => {
   return (selectedVotes.value[positionId] || []).length;
 };
 
-// Toggle candidate selection for a position
 const toggleCandidate = (position, candidateId) => {
   const positionId = position.id;
   const maxCandidates = position.max_candidate || 1;
   
-  // Initialize the position in selectedVotes if it doesn't exist
   if (!selectedVotes.value[positionId]) {
     selectedVotes.value[positionId] = [];
   }
@@ -250,10 +414,8 @@ const toggleCandidate = (position, candidateId) => {
   const candidateIndex = currentSelections.indexOf(candidateId);
   
   if (candidateIndex > -1) {
-    // Deselect the candidate if already selected
     currentSelections.splice(candidateIndex, 1);
   } else {
-    // If we've reached max candidates, don't allow more selections
     if (currentSelections.length >= maxCandidates) {
       toast.add({
         severity: 'warn',
@@ -263,25 +425,19 @@ const toggleCandidate = (position, candidateId) => {
       });
       return;
     }
-    // Add the new candidate
     currentSelections.push(candidateId);
   }
   
-  // Update the selected votes
   selectedVotes.value = {
     ...selectedVotes.value,
     [positionId]: currentSelections
   };
   
-  console.log('Selected votes:', selectedVotes.value);
-  
-  // Clear any error if the selection is now valid
   if (error.value && error.value.includes('only select up to') && currentSelections.length <= maxCandidates) {
     error.value = null;
   }
 };
 
-// Check if all positions have valid votes (at least one and not exceeding max_candidate)
 const allPositionsVoted = computed(() => {
   return positions.value.every(position => {
     const votes = selectedVotes.value[position.id] || [];
@@ -290,7 +446,6 @@ const allPositionsVoted = computed(() => {
   });
 });
 
-// Check if any position has exceeded max candidates
 const hasExceededMaxCandidates = computed(() => {
   return positions.value.some(position => {
     const selectedCount = (selectedVotes.value[position.id] || []).length;
@@ -298,7 +453,6 @@ const hasExceededMaxCandidates = computed(() => {
   });
 });
 
-// Get the number of positions with valid votes (not exceeding max_candidate)
 const validVotedPositionsCount = computed(() => {
   return positions.value.filter(position => {
     const votes = selectedVotes.value[position.id] || [];
@@ -307,19 +461,16 @@ const validVotedPositionsCount = computed(() => {
   }).length;
 });
 
-// Get the total number of positions with any votes (for backward compatibility)
 const votedPositionsCount = computed(() => {
   return positions.value.filter(position => {
     return (selectedVotes.value[position.id] || []).length > 0;
   }).length;
 });
 
-// Show toast notification when user exceeds max candidates
 watch(
   () => hasExceededMaxCandidates.value,
-  (newValue, oldValue) => {
+  (newValue) => {
     if (newValue) {
-      // Find the first position that has too many candidates selected
       const invalidPosition = positions.value.find(position => {
         const selectedCount = (selectedVotes.value[position.id] || []).length;
         return selectedCount > (position.max_candidate || 1);
@@ -337,6 +488,7 @@ watch(
     }
   }
 );
+
 const submitVotes = async () => {
   if (Object.keys(selectedVotes.value).length !== positions.value.length) {
     error.value = 'Please select a candidate for each position';
@@ -346,7 +498,6 @@ const submitVotes = async () => {
   try {
     isSubmitting.value = true;
     
-    // Create vote objects for each position and candidate
     const votes = [];
     for (const [positionId, candidateIds] of Object.entries(selectedVotes.value)) {
       for (const candidateId of candidateIds) {
@@ -359,29 +510,21 @@ const submitVotes = async () => {
         });
       }
     }
-
-    console.log('Submitting votes:', votes);
     
-    // Submit all votes
-    console.log('Submitting votes...');
     const results = await Promise.all(votes.map(vote => voteStore.submitVote(vote)));
-    console.log('Votes submitted successfully:', results);
     
-    // Add a small delay to ensure all state is updated
     await new Promise(resolve => setTimeout(resolve, 500));
     
-    // Redirect to confirmation page
-    console.log('Navigating to confirmation page...');
     await router.push(`/elections/${electionId}/confirmation`);
-    console.log('Navigation complete');
   } catch (err) {
     console.error('Error in submitVotes:', err);
-    console.error('Error details:', {
-      message: err.message,
-      name: err.name,
-      stack: err.stack
-    });
     error.value = 'Failed to submit votes. Please try again.';
+    toast.add({
+      severity: 'error',
+      summary: 'Submission Failed',
+      detail: 'Failed to submit votes. Please try again.',
+      life: 5000
+    });
   } finally {
     isSubmitting.value = false;
   }
@@ -391,38 +534,48 @@ const fetchElectionData = async () => {
   try {
     loading.value = true;
     
-    // Fetch election details
     election.value = await electionStore.getElectionById(electionId);
     
-    // Fetch candidates for this election
     const response = await electionStore.getElectionCandidates(electionId);
-    console.log('Raw candidates data:', response);
-    
-    // Extract the candidates array from the response
     const candidatesData = response?.data || [];
-    candidates.value = candidatesData;
     
-    // Debug log the candidates data
-    console.log('Processing candidates data:', JSON.parse(JSON.stringify(candidatesData)));
+    // Map the response to match our expected structure
+    const mappedCandidates = candidatesData.map(candidate => ({
+      id: candidate.id,
+      name: candidate.name || `${candidate.user?.first_name || ''} ${candidate.user?.last_name || ''}`.trim(),
+      avatar_url: candidate.avatar_url || candidate.user?.avatar_url || '/images/avatar/default.png',
+      position_id: candidate.position_id,
+      position: candidate.position,
+      partylist: candidate.partylist, // Remove the fallback here
+      user_profile: candidate.user_profile, // Add user_profile to preserve the data
+      user: {
+        ...candidate.user,
+        first_name: candidate.user?.first_name || candidate.user_profile?.first_name || '',
+        last_name: candidate.user?.last_name || candidate.user_profile?.last_name || '',
+        avatar_url: candidate.avatar_url || candidate.user?.avatar_url || '/images/avatar/default.png',
+        college: candidate.user?.college || candidate.user_profile?.college || { college_name: 'No College', alias: '' }
+      },
+      platform: candidate.platform || 'No platform provided',
+      created_at: candidate.created_at,
+      election_id: candidate.election_id,
+      status: candidate.status
+    }));
     
-    // First, collect all unique position objects from candidates
+    candidates.value = mappedCandidates;
+    
     const positionMap = new Map();
-    
-        // Get user's college ID from auth store
     const userCollegeId = authStore.profile?.college_id;
     
-    // First, try to get positions directly
     try {
       const { data: positionsData } = await electionStore.getElectionPositions(electionId);
       if (positionsData && positionsData.length > 0) {
         positionsData.forEach(pos => {
-          // Only include position if it's not college-restricted or matches user's college
           if (pos.college_can_vote === null || pos.college_can_vote === userCollegeId) {
             positionMap.set(pos.id, {
               id: pos.id,
               name: pos.title || `Position ${pos.id}`,
               order: pos.order || 0,
-              max_candidate: pos.max_candidate || 1, // Ensure max_candidate is set
+              max_candidate: pos.max_candidate || 1,
               ...pos
             });
           }
@@ -432,19 +585,17 @@ const fetchElectionData = async () => {
       console.error('Error fetching positions:', err);
     }
 
-    // If no positions found, try to get them from candidates (with college filtering)
     if (positionMap.size === 0 && candidatesData) {
       candidatesData.forEach(candidate => {
         if (candidate.position && candidate.position.id) {
           const pos = candidate.position;
-          // Only include position if it's not college-restricted or matches user's college
           if (pos.college_can_vote === null || pos.college_can_vote === userCollegeId) {
             if (!positionMap.has(pos.id)) {
               positionMap.set(pos.id, {
                 id: pos.id,
                 name: pos.title || `Position ${pos.id}`,
                 order: pos.order || 0,
-                max_candidate: pos.max_candidate || 1, // Ensure max_candidate is set
+                max_candidate: pos.max_candidate || 1,
                 ...pos
               });
             }
@@ -453,14 +604,11 @@ const fetchElectionData = async () => {
       });
     }
     
-    // Convert to array and sort by order
     const sortedPositions = Array.from(positionMap.values())
       .sort((a, b) => (a.order || 0) - (b.order || 0));
     
     positions.value = sortedPositions;
-    console.log('Processed positions:', JSON.parse(JSON.stringify(sortedPositions)));
     
-    // Check if user has already voted using their profile ID
     const hasVoted = await voteStore.hasUserVoted(authStore.profile?.id, electionId);
     if (hasVoted) {
       router.push(`/elections/${electionId}/confirmation`);
@@ -470,12 +618,17 @@ const fetchElectionData = async () => {
   } catch (err) {
     console.error('Error fetching election data:', err);
     error.value = 'Failed to load election data. Please try again.';
+    toast.add({
+      severity: 'error',
+      summary: 'Loading Failed',
+      detail: 'Failed to load election data. Please try again.',
+      life: 5000
+    });
   } finally {
     loading.value = false;
   }
 };
 
-// Lifecycle hooks
 onMounted(() => {
   if (!authStore.isAuthenticated) {
     router.push(`/login?redirect=/elections/${electionId}/vote`);
@@ -487,5 +640,10 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* Add any custom styles here */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 </style>

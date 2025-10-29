@@ -53,50 +53,92 @@
             </div>
           </div>
 
-          <div class="px-6 py-4 grid grid-cols-4 gap-10">
-            <!-- Left: Candidate list -->
-            <div class="col-span-2">
-              <div v-for="candidate in sortedCandidates(position.candidates)" :key="candidate.id" class=" flex p-3 gap-3 rounded-lg justify-between">
-                <div class="flex items-center gap-3">
-                  <div class="h-10 w-10 border-2 border-blue-500 rounded-lg overflow-hidden bg-blue-100 flex items-center justify-center">
-                    <img 
-                      v-if="candidate.avatar_url"
-                      :src="candidate.avatar_url"
-                      alt="Candidate avatar"
-                      class="w-full h-full object-cover"
-                    />
-                    <span v-else class="text-blue-800 font-semibold text-sm">
-                      {{ (candidate.name?.charAt(0) || 'U').toUpperCase() }}
-                    </span>
-                  </div>
-                  <div>
-                    <p class="text-gray-800 font-medium">{{ candidate.name }}</p>
-                    <p class="text-xs text-gray-500 mt-0.5">
-                      {{ 
-                        candidate.user_profile?.college?.college_name || 
-                        (candidate.user_profile?.college || 'No college specified')
-                      }}
-                    </p>
-                  </div>
-                </div>
-                <div class="flex gap-2">
-                  <span class="text-gray-700 font-semibold">
-                    {{ authStore.isAdmin || (election && electionStore.isElectionEnded(election)) ? candidate.vote_count : '?' }}
-                  </span>
-                  <span class="text-sm text-gray-500">votes</span>
-                </div>
+          <div class="p-6">
+            <!-- Vote Statistics Summary -->
+            <div class="mb-6 grid grid-cols-3 gap-4">
+              <div class="bg-blue-50 rounded-lg p-4 border border-blue-100">
+                <p class="text-sm text-blue-600 font-medium mb-1">Total Votes</p>
+                <p class="text-2xl font-bold text-blue-700">
+                  {{ position.candidates.reduce((sum, c) => sum + (c.vote_count || 0), 0) }}
+                </p>
+              </div>
+              <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <p class="text-sm text-gray-600 font-medium mb-1">Candidates</p>
+                <p class="text-2xl font-bold text-gray-700">
+                  {{ position.candidates.length }}
+                </p>
+              </div>
+              <div class="bg-green-50 rounded-lg p-4 border border-green-100">
+                <p class="text-sm text-green-600 font-medium mb-1">Leading Candidate</p>
+                <p class="text-lg font-bold text-green-700 truncate">
+                  {{ (authStore.isAdmin || (election && electionStore.isElectionEnded(election))) ? (sortedCandidates(position.candidates)[0]?.name || 'N/A') : '?' }}
+                </p>
               </div>
             </div>
 
-            <!-- Right: Single chart per position -->
-            <div class="col-span-2">
-              <div class="h-92">
-                <Chart
-                  type="bar"
-                  :data="getChartData(position)"
-                  :options="getChartOptions()"
-                  class="h-full w-full"
-                />
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <!-- Left: Candidate Rankings -->
+              <div class="space-y-3">
+                <h4 class="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Candidate Rankings</h4>
+                <div v-for="candidate in sortedCandidates(position.candidates)" :key="candidate.id" 
+                     class="grid grid-cols-12 gap-4 bg-gray-50 hover:bg-gray-100 transition-colors rounded-lg p-3 border border-gray-200">
+                  <!-- Avatar -->
+                  <div class="col-span-1 flex items-center">
+                    <div class="h-10 w-10 border-2 border-blue-400 rounded-lg overflow-hidden bg-blue-100 flex items-center justify-center flex-shrink-0">
+                      <img 
+                        v-if="candidate.avatar_url"
+                        :src="candidate.avatar_url"
+                        alt="Candidate avatar"
+                        class="w-full h-full object-cover"
+                      />
+                      <span v-else class="text-blue-700 font-bold text-lg">
+                        {{ (candidate.name?.charAt(0) || 'U').toUpperCase() }}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <!-- Info -->
+                  <div class="col-span-7 flex flex-col justify-center">
+                    <p class="text-gray-900 font-semibold truncate">{{ candidate.name }}</p>
+                    <p class="text-xs text-gray-500 truncate">
+                      {{ candidate.college || 'No college specified' }}
+                    </p>
+                    <p v-if="candidate.partylist" class="text-xs text-blue-600 font-medium truncate">
+                      {{ candidate.partylist }}
+                    </p>
+                  </div>
+                  
+                  <!-- Vote Count -->
+                  <div class="col-span-4 flex items-center justify-end space-x-2">
+                    <div class="text-right">
+                      <div class="text-xl font-bold text-gray-800">
+                        {{ authStore.isAdmin || (election && electionStore.isElectionEnded(election)) ? candidate.vote_count : '?' }}
+                      </div>
+                      <div class="text-xs text-gray-500">votes</div>
+                    </div>
+                  </div>
+                  
+                  <!-- Progress Bar -->
+                  <div v-if="authStore.isAdmin || (election && electionStore.isElectionEnded(election))" 
+                       class="col-span-12 mt-2 bg-gray-200 rounded-full h-2 overflow-hidden">
+                    <div class="bg-blue-500 h-full rounded-full transition-all duration-500"
+                         :style="{ width: `${getVotePercentage(position.candidates, candidate)}%` }">
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Right: Chart Visualization -->
+              <div>
+                <h4 class="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Vote Distribution</h4>
+                <div class="bg-white rounded-lg border border-gray-200 p-4 h-[400px]">
+                  <Chart
+                    type="bar"
+                    :data="getChartData(position)"
+                    :options="getChartOptions()"
+                    class="h-full w-full"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -167,8 +209,15 @@ const loadStats = async () => {
     loading.value = false;
   }
 };
+
 const sortedCandidates = (cands) => {
   return [...(cands || [])].sort((a, b) => (b.vote_count || 0) - (a.vote_count || 0))
+}
+
+const getVotePercentage = (candidates, candidate) => {
+  const total = candidates.reduce((sum, c) => sum + (c.vote_count || 0), 0)
+  if (total === 0) return 0
+  return ((candidate.vote_count || 0) / total * 100).toFixed(1)
 }
 
 console.log('election',election.value)
