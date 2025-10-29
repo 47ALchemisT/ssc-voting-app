@@ -216,7 +216,20 @@ export const useElectionStore = defineStore('elections', () => {
         .select(`
           *,
           user:user_id (*),
-          position:position_id (*)
+          user_profile:user_id (
+            first_name,
+            last_name,
+            avatar_url,
+            college:college_id (
+              college_name,
+              alias
+            )
+          ),
+          position:position_id (*),
+          partylist:partylists_id (
+            id,
+            name
+          )
         `)
         .eq('election_id', electionId)
         .eq('status', 1) // Only get approved candidates (status = 1)
@@ -228,6 +241,8 @@ export const useElectionStore = defineStore('elections', () => {
       const formattedData = (data || []).map(candidate => {
         const position = candidate.position || {};
         const user = candidate.user || {};
+        const userProfile = candidate.user_profile || {};
+        const partylist = candidate.partylist || {};
         
         // Handle platform text (it might be a stringified JSON with an error)
         let platform = candidate.platform || '';
@@ -251,8 +266,8 @@ export const useElectionStore = defineStore('elections', () => {
             .join(' ');
         };
         
-        const firstName = formatName(user.first_name || '');
-        const lastName = formatName(user.last_name || '');
+        const firstName = formatName(user.first_name || userProfile.first_name || '');
+        const lastName = formatName(user.last_name || userProfile.last_name || '');
         const fullName = `${firstName} ${lastName}`.trim();
         
         return {
@@ -268,8 +283,13 @@ export const useElectionStore = defineStore('elections', () => {
             id: user.id,
             first_name: firstName,
             last_name: lastName,
-            avatar_url: user.avatar_url || null
+            avatar_url: user.avatar_url || userProfile.avatar_url || null
           },
+          user_profile: {
+            ...userProfile,
+            college: userProfile.college || null
+          },
+          partylist: partylist,
           position: {
             id: position.id,
             title: position.title || 'Unknown Position',
@@ -279,7 +299,7 @@ export const useElectionStore = defineStore('elections', () => {
             college_can_vote: position.college_can_vote || null,
           },
           // Convenience alias for UIs
-          avatar_url: user.avatar_url || null,
+          avatar_url: user.avatar_url || userProfile.avatar_url || null,
           // For backward compatibility
           name: fullName,
           position_name: position.title || 'Unknown Position'

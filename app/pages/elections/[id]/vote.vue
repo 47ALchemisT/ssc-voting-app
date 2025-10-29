@@ -202,10 +202,10 @@
               <div class="flex items-start space-x-4">
                 <!-- Avatar -->
                 <div class="flex-shrink-0">
-                  <div v-if="candidate.avatar_url" class="w-20 h-20 rounded-lg overflow-hidden border-2 border-gray-200">
+                  <div v-if="candidate.avatar_url" class="w-28 h-32 rounded-lg overflow-hidden border-2 border-gray-200">
                     <img :src="candidate.avatar_url" alt="Candidate Avatar" class="w-full h-full object-cover">
                   </div>
-                  <div v-else class="w-20 h-20 rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center border-2 border-blue-200">
+                  <div v-else class="w-28 h-32 rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center border-2 border-blue-200">
                     <span class="text-2xl font-bold text-white">
                       {{ getInitials(candidate.name) }}
                     </span>
@@ -215,35 +215,14 @@
                 <!-- Candidate Info -->
                 <div class="flex-1 min-w-0">
                   <h4 class="text-base font-semibold text-gray-900 truncate">{{ candidate.name || 'Unknown Candidate' }}</h4>
-                  <p class="text-sm text-gray-500 mb-1">{{ position.name }}</p>
-                  
-                  <!-- Partylist and College Info -->
-                  <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600 mt-2">
-                    <div class="flex items-center">
-                      <i class="pi pi-flag mr-1 text-blue-500"></i>
-                      <span>{{ candidate.partylist || 'No Partylist' }}</span>
-                    </div>
-                    <div class="flex items-center">
-                      <i class="pi pi-building mr-1 text-green-500"></i>
-                      <span>{{ candidate.college || 'No College' }}</span>
-                    </div>
+                  <div class="flex items-center text-xs">
+                    <span>{{ candidate.college || 'No College' }}</span>
                   </div>
-                  
-                  <!-- Platform Preview -->
-                  <div v-if="candidate.platform && typeof candidate.platform === 'string'" class="mt-2">
-                    <p class="text-xs font-medium text-gray-700 mb-1">Platform:</p>
-                    <p v-if="!expandedPlatforms[candidate.id]" class="text-xs text-gray-600 line-clamp-2">
-                      {{ candidate.platform }}
-                    </p>
-                    <p v-else class="text-xs text-gray-600">
-                      {{ candidate.platform }}
-                    </p>
-                    <button
-                      class="text-xs text-blue-600 hover:text-blue-700 font-medium mt-1 focus:outline-none"
-                      @click.stop="togglePlatform(candidate.id)"
-                    >
-                      {{ expandedPlatforms[candidate.id] ? 'Show less' : 'Read more' }}
-                    </button>
+                  <!-- Partylist and College Info -->
+                  <div class=" text-sm font-medium text-blue-600 mt-2">
+                    <div class="flex items-center">
+                      <span>Partylist: {{ candidate.partylist || 'No Partylist' }}</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -366,7 +345,7 @@ const getCandidatesByPosition = (positionId) => {
     const avatarUrl = candidate.user_profile?.avatar_url || 
                      candidate.avatar_url || 
                      candidate.user?.avatar_url || 
-                     '/images/avatar/default.png';
+                     null;
     
     return {
       id: candidate.id,
@@ -543,7 +522,7 @@ const fetchElectionData = async () => {
     const mappedCandidates = candidatesData.map(candidate => ({
       id: candidate.id,
       name: candidate.name || `${candidate.user?.first_name || ''} ${candidate.user?.last_name || ''}`.trim(),
-      avatar_url: candidate.avatar_url || candidate.user?.avatar_url || '/images/avatar/default.png',
+      avatar_url: candidate.avatar_url || candidate.user?.avatar_url || null,
       position_id: candidate.position_id,
       position: candidate.position,
       partylist: candidate.partylist, // Remove the fallback here
@@ -552,7 +531,7 @@ const fetchElectionData = async () => {
         ...candidate.user,
         first_name: candidate.user?.first_name || candidate.user_profile?.first_name || '',
         last_name: candidate.user?.last_name || candidate.user_profile?.last_name || '',
-        avatar_url: candidate.avatar_url || candidate.user?.avatar_url || '/images/avatar/default.png',
+        avatar_url: candidate.avatar_url || candidate.user?.avatar_url || null,
         college: candidate.user?.college || candidate.user_profile?.college || { college_name: 'No College', alias: '' }
       },
       platform: candidate.platform || 'No platform provided',
