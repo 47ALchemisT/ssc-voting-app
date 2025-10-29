@@ -97,10 +97,93 @@ export const useVotersListStore = defineStore('votersList', () => {
     }
   };
 
+  // Update a single voter record
+  const updateVoter = async (voterId, payload) => {
+    try {
+      loading.value = true;
+      error.value = null;
+
+      const { data, error: updateError } = await supabase
+        .from('voters_list')
+        .update({
+          reg_email: payload.reg_email?.trim().toLowerCase() ?? null,
+          fullname: payload.fullname?.trim() ?? null,
+          college: payload.college?.trim() ?? null,
+          school_id: payload.school_id?.trim() ?? null,
+        })
+        .eq('id', voterId)
+        .select()
+        .single();
+
+      if (updateError) throw updateError;
+      return { data, error: null };
+    } catch (err) {
+      console.error('Error updating voter:', err);
+      error.value = err.message || 'Failed to update voter';
+      return { data: null, error: error.value };
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  // Delete voters by a list of IDs (bulk)
+  const deleteVotersByIds = async (electionId, ids) => {
+    try {
+      loading.value = true;
+      error.value = null;
+
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return { data: [], error: null, deleted: 0 };
+      }
+
+      const { data, error: deleteError } = await supabase
+        .from('voters_list')
+        .delete()
+        .in('id', ids)
+        .eq('election_id', electionId)
+        .select('id');
+
+      if (deleteError) throw deleteError;
+      return { data, error: null, deleted: data?.length || 0 };
+    } catch (err) {
+      console.error('Error deleting voters:', err);
+      error.value = err.message || 'Failed to delete voters';
+      return { data: null, error: error.value, deleted: 0 };
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  // Delete all voters for an election
+  const deleteAllVoters = async (electionId) => {
+    try {
+      loading.value = true;
+      error.value = null;
+
+      const { data, error: deleteError } = await supabase
+        .from('voters_list')
+        .delete()
+        .eq('election_id', electionId)
+        .select('id');
+
+      if (deleteError) throw deleteError;
+      return { data, error: null, deleted: data?.length || 0 };
+    } catch (err) {
+      console.error('Error deleting all voters:', err);
+      error.value = err.message || 'Failed to delete all voters';
+      return { data: null, error: error.value, deleted: 0 };
+    } finally {
+      loading.value = false;
+    }
+  };
+
   return {
     loading,
     error,
     importVoters,
     getVotersByElection,
+    updateVoter,
+    deleteVotersByIds,
+    deleteAllVoters,
   };
 });

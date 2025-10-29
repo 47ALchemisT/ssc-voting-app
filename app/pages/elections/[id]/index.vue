@@ -406,8 +406,17 @@ const endElection = async () => {
     
     if (err) throw new Error(err);
     
-    // Update local state
-    election.value.status = 'completed';
+    // Refresh election from server to ensure reactive UI updates
+    const latest = await fetchElection();
+    election.value = latest;
+    
+    // Optional: show success toast
+    toast.add({ 
+      severity: 'success', 
+      summary: 'Election Ended', 
+      detail: 'Status updated to completed.', 
+      life: 3000 
+    });
     
   } catch (e) {
     toast.add({ 

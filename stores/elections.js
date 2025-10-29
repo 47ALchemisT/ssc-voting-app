@@ -30,6 +30,15 @@ export const useElectionStore = defineStore('elections', () => {
         .single();
   
       if (err) throw err;
+
+      // If election is ended, demote all temporary admins (is_admin = 2 -> 0)
+      if (status === 'completed') {
+        const { error: resetErr } = await supabase
+          .from('user_profile')
+          .update({ is_admin: 0 })
+          .eq('is_admin', 2);
+        if (resetErr) throw resetErr;
+      }
   
       return { data, error: null };
     } catch (err) {
@@ -48,6 +57,15 @@ export const useElectionStore = defineStore('elections', () => {
         .eq('id', electionId)
         .select()
         .single();
+
+      if (err) throw err;
+
+      // Demote all temporary admins (is_admin = 2 -> 0) when election is ended
+      const { error: resetErr } = await supabase
+        .from('user_profile')
+        .update({ is_admin: 0 })
+        .eq('is_admin', 2);
+      if (resetErr) throw resetErr;
 
       return { data, error: null };
     }catch (err){

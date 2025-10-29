@@ -10,7 +10,7 @@
     
     <div class="flex justify-between pt-4 mb-4">
       <div>
-        <h1 class="text-lg font-medium text-gray-800">Candidates for {{ electionTitle }}</h1>
+        <h1 class="text-lg font-medium text-gray-800">Candidates for Election</h1>
         <p class="text-sm text-gray-500">List below are approved canndidates for this election</p>
       </div>
       <div>
@@ -82,13 +82,21 @@
         <Column field="name" header="Candidate" style="min-width: 250px">
           <template #body="{ data }">
             <div class="flex items-center gap-3">
-              <Avatar :image="data.user?.avatar_url || 'https://via.placeholder.com/40'" 
-                    shape="circle" 
-                    size="large" 
-                    class="bg-gray-100" />
+              <template v-if="data.user?.avatar_url">
+                <Avatar :image="data.user.avatar_url" 
+                        shape="circle" 
+                        size="large" 
+                        class="bg-gray-100" />
+              </template>
+              <template v-else>
+                <Avatar :label="getInitials(data.user)"
+                        shape="circle"
+                        size="large"
+              />
+              </template>
               <div>
-                <div class="font-medium">{{ data.user?.first_name }} {{ data.user?.last_name }}</div>
-                <div class="text-sm text-gray-500">{{ data.party || 'Independent' }}</div>
+                <div class="font-medium capitalize">{{ data.user?.first_name }} {{ data.user?.last_name }}</div>
+                <div class="text-sm text-gray-500">{{ data.partylists?.name || 'Independent' }}</div>
               </div>
             </div>
           </template>
@@ -185,6 +193,15 @@ async function loadCandidates() {
   } finally {
     loading.value = false
   }
+}
+
+function getInitials(user) {
+  const first = (user?.first_name || '').trim()
+  const last = (user?.last_name || '').trim()
+  const firstInitial = first ? first[0] : ''
+  const lastInitial = last ? last[0] : ''
+  const initials = `${firstInitial}${lastInitial}`
+  return initials ? initials.toUpperCase() : '?'
 }
 
 function handleApplicationsUpdated() {
