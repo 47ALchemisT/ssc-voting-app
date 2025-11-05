@@ -243,8 +243,10 @@
               </h2>
               <div class="h-1.5 w-56 bg-blue-600 rounded-full mb-6"></div>
               <div class="text-center mb-4 bg-white p-6 rounded-sm border border-gray-200">
-                <div class="mb-6">
-                  <img class="w-24 h-24 rounded-full mx-auto" src="~/assets/images/Background.png" alt="MSU Naawan Logo">
+                <div class="mb-6 flex gap-3 justify-center">
+                  <img class="w-24 h-24 rounded-full" src="~/assets/images/Background.png" alt="MSU Naawan Logo">
+                  <img class="w-24 h-24 rounded-full" src="~/assets/images/SSC-logo-final.jpg" alt="MSU Naawan Logo">
+
                 </div>
                 <h1 class="text-xl font-bold text-gray-900">
                   Mindanao State University at Naawan (MSUN)

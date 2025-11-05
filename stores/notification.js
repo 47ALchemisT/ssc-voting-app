@@ -48,13 +48,8 @@ export const useNotificationStore = defineStore('notification', () => {
     }
   }
 
-  const fetchMyNotifications = async (forceRefresh = false) => {
+  const fetchMyNotifications = async () => {
     if (!user.value?.id) return { data: [], error: 'User not logged in' }
-
-    // Return cached notifications if available and not forcing a refresh
-    if (!forceRefresh && notifications.value.length > 0) {
-      return { data: notifications.value, error: null };
-    }
 
     loading.value = true
     clearError()
@@ -70,11 +65,13 @@ export const useNotificationStore = defineStore('notification', () => {
       if (profileError) throw profileError
       if (!profile) throw new Error('User profile not found')
 
-      // Then fetch notifications for this profile
+      // Fetch notifications where:
+      // 1. The 'to' field matches the current user's profile ID (for direct notifications)
+      // 2. The 'to' field matches the admin's profile ID (for application notifications)
       const { data, error: err } = await supabase
         .from('notification')
         .select('*')
-        .eq('to', profile.id)  // Use the profile ID to match the 'to' field
+        .eq('to', profile.id)  // Direct notifications to this profile
         .order('created_at', { ascending: false })
 
       if (err) throw err
@@ -116,7 +113,10 @@ export const useNotificationStore = defineStore('notification', () => {
 
       if (err) throw err
 
-      notifications.value.unshift(data)
+      // Only add to local state if this notification is for the current user
+      if (data.to === user.value?.id) {
+        notifications.value.unshift(data)
+      }
       return { data, error: null }
     } catch (err) {
       console.error('Error creating notification:', err)

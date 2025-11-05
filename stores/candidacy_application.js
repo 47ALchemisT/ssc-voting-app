@@ -158,15 +158,15 @@ export const useCandidacyApplicationStore = defineStore('candidacyApplications',
         
         if (adminError) throw adminError;
         
-        // Send notification to the admin
+        // Send notification to the admin using the 'to' field
         await notificationStore.createNotification({
-          userId: userProfile.id,
+          userId: userProfile.id,  // The user who created the notification
           title: 'New Candidacy Application',
           message: `A new application for ${data.position.name} has been submitted and is pending your approval.`,
           type: 'candidacy_application',
-          link: null, // Make sure this route exists
+          link: null,
           created_at: new Date().toISOString(),
-          SubjectTo: adminUser.id
+          to: adminUser.id  // The admin user who should receive this notification
         });
       } catch (notifError) {
         console.warn('Notification creation failed:', notifError)

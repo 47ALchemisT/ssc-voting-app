@@ -22,9 +22,17 @@
         <!-- Hero Section-->
         <div class="text-white w-full max-w-4xl text-center sm:text-left">
           <!-- University Badge -->
-          <div class="inline-block mb-4 transform transition-transform duration-300 hover:scale-110">
+          <div class="flex gap-3 mb-4">
             <img 
               src="~/assets/images/Background.png" 
+              alt="MSU Naawan Logo" 
+              class="w-16 h-16 rounded-full"
+              loading="eager"
+              width="64"
+              height="64"
+            >
+            <img 
+              src="~/assets/images/SSC-logo-final.jpg" 
               alt="MSU Naawan Logo" 
               class="w-16 h-16 rounded-full"
               loading="eager"

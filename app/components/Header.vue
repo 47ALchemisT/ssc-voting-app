@@ -23,8 +23,7 @@
       <Notification />
       <button 
         @click="$emit('toggle-sidebar')" 
-        class="mr-3 p-2 rounded-full hover:bg-gray-100"
-        :class="{'lg:flex hidden': !sidebarOpen, 'flex': true}"
+        class="flex mr-3 p-2 rounded-full hover:bg-gray-100"
         :aria-label="sidebarOpen ? 'Close menu' : 'Open menu'"
       >
         <i class="pi pi-bars" />

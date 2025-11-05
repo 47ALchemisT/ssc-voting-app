@@ -38,7 +38,7 @@
         </div>
       </div>
 
-      <div class="bg-white rounded-lg border border-gray-200 p-6">
+      <div class="bg-white rounded-lg border border-gray-200 p-6 mb-6">
         <div v-if="loading" class="text-center py-8">
           <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mx-auto"></div>
           <p class="mt-2 text-gray-600">Loading election details...</p>
@@ -70,7 +70,7 @@
                 :class="{ 'p-invalid': errors.electionId }"
                 :disabled="!!electionId"
               />
-              <small v-if="errors.electionId" class="p-error">{{ errors.electionId }}</small>
+              <small v-if="errors.electionId" class="p-error text-red-500">{{ errors.electionId }}</small>
             </div>
 
             <!-- Position Selection -->
@@ -87,14 +87,14 @@
                 :loading="positionStore.loading"
                 :disabled="positionStore.loading"
               />
-              <small v-if="errors.positionId" class="p-error">{{ errors.positionId }}</small>
+              <small v-if="errors.positionId" class="p-error text-red-500">{{ errors.positionId }}</small>
             </div>
 
             <!-- Partylist Selection -->
             <div>
               <div class="flex items-center gap-2 mb-1">
                 <label class="text-sm font-medium text-gray-700">Partylist</label>
-                <span class="text-xs text-gray-500">(Leave empty if independent)</span>
+                <span class="text-xs text-gray-500">(Required for some positions)</span>
               </div>
               <Dropdown
                 v-model="form.partylistId"
@@ -108,7 +108,7 @@
                 :loading="partylistStore.loading"
                 :disabled="partylistStore.loading"
               />
-              <small v-if="errors.partylistId" class="p-error">{{ errors.partylistId }}</small>
+              <small v-if="errors.partylistId" class="p-error text-red-500">{{ errors.partylistId }}</small>
             </div>
 
             <!-- Platform -->
@@ -121,7 +121,7 @@
                 :class="{ 'p-invalid': errors.platform }"
                 placeholder="Share your platform and reasons for running..."
               />
-              <small v-if="errors.platform" class="p-error">{{ errors.platform }}</small>
+              <small v-if="errors.platform" class="p-error text-red-500">{{ errors.platform }}</small>
             </div>
 
             <!-- Document Uploads -->
@@ -164,7 +164,7 @@
                   :class="{ 'p-invalid': errors.gradeSlip }"
                 />
                 <small class="text-gray-500 text-xs">Upload your latest grade slip (Max 5MB, PDF or Image)</small>
-                <small v-if="errors.gradeSlip" class="p-error block">{{ errors.gradeSlip }}</small>
+                <small v-if="errors.gradeSlip" class="p-error text-red-500 block">{{ errors.gradeSlip }}</small>
               </div>
 
               <!-- Activity Certificate -->
@@ -203,7 +203,7 @@
                   :class="{ 'p-invalid': errors.activityCertificate }"
                 />
                 <small class="text-gray-500 text-xs">Upload your activity certificate (Max 5MB, PDF or Image)</small>
-                <small v-if="errors.activityCertificate" class="p-error block">{{ errors.activityCertificate }}</small>
+                <small v-if="errors.activityCertificate" class="p-error text-red-500 block">{{ errors.activityCertificate }}</small>
               </div>
 
               <!-- Candidacy Certificate -->
@@ -242,7 +242,7 @@
                   :class="{ 'p-invalid': errors.candidacyCertificate }"
                 />
                 <small class="text-gray-500 text-xs">Upload your certificate of candidacy (Max 5MB, PDF or Image)</small>
-                <small v-if="errors.candidacyCertificate" class="p-error block">{{ errors.candidacyCertificate }}</small>
+                <small v-if="errors.candidacyCertificate" class="p-error text-red-500 block">{{ errors.candidacyCertificate }}</small>
               </div>
 
               <!-- Back Subject Record -->
@@ -280,6 +280,7 @@
                   @select="(e) => handleFileSelect(e, 'backSubjectRecord')"
                 />
                 <small class="text-gray-500 text-xs">Upload your back subject record if applicable (Max 5MB, PDF or Image)</small>
+                <small v-if="errors.backSubjectRecord" class="p-error text-red-500 block">{{ errors.backSubjectRecord }}</small>
               </div>
 
               <!-- COR (Certificate of Registration) -->
@@ -318,7 +319,7 @@
                   :class="{ 'p-invalid': errors.cor }"
                 />
                 <small class="text-gray-500 text-xs">Upload your certificate of registration (Max 5MB, PDF or Image)</small>
-                <small v-if="errors.cor" class="p-error block">{{ errors.cor }}</small>
+                <small v-if="errors.cor" class="p-error text-red-500 block">{{ errors.cor }}</small>
               </div>
             </div>
 
@@ -529,6 +530,17 @@ const validateForm = () => {
   
   if (!form.value.cor) {
     newErrors.cor = 'Certificate of Registration is required'
+  }
+  
+  // Validate partylist (if position requires it)
+  const selectedPosition = positionStore.positions?.find(p => p.id === form.value.positionId)
+  if (selectedPosition?.requires_partylist && !form.value.partylistId) {
+    newErrors.partylistId = 'Partylist is required for this position'
+  }
+  
+  // Validate back subject record
+  if (form.value.backSubjectRecord === null) {
+    newErrors.backSubjectRecord = 'Back subject record is required'
   }
   
   errors.value = newErrors

@@ -5,7 +5,7 @@
           <!-- Logo -->
           <div class="flex-shrink-0 flex items-center">
             <a href="#" class="flex items-center" @click.prevent="scrollToSection('hero')">
-              <img class="h-8 w-auto" src="../assets/images/Background.png" alt="MSU Naawan Logo">
+              <img class="h-8 w-auto" src="../assets/images/SSC-logo-final.jpg" alt="MSU Naawan Logo">
               <span class="ml-3 text-xl font-bold text-gray-900">SSC Elections</span>
             </a>
           </div>
