@@ -152,7 +152,7 @@
                     </div>
                   </div>
                 </div>
-                <div v-if="authStore.isAdmin">
+                <div v-if="authStore.isAdmin || myApplication">
                   <h4 class="text-sm font-medium text-gray-500 mb-4">REQUIREMENTS</h4>
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <!-- Grade Slip Card -->
@@ -274,6 +274,7 @@ const applicationId = route.params.id
 const loading = ref(true)
 const error = ref(null)
 const application = ref(null)
+const myApplication = ref(false)
 const updating = ref(false)
 const showApproveDialog = ref(false)
 const showRejectDialog = ref(false)
@@ -383,6 +384,9 @@ onMounted(async () => {
     
     application.value = data
     
+    // Check if this is the authenticated user's application
+    myApplication.value = authStore.user?.id === data.user?.user_id
+
     // If application has an election ID, fetch its status
     if (data.election_id) {
       const { data: electionData } = await electionStore.getElectionById(data.election_id)
