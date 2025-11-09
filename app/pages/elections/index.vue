@@ -17,7 +17,16 @@
 
     <!-- Other Elections -->
     <div v-if="!loading">
-      <AppBreadCrumbs :home="home" :items="items" />
+      <AppBreadCrumbs 
+      :home="{
+        label: 'Dashboard',
+        icon: 'pi pi-home',
+        route: '/dashboard'
+      }" 
+      :items="[
+        { label: 'Elections', icon: 'pi pi-chart-bar' }
+      ]" 
+    />
       <div class="flex justify-between mb-3">
         <div>
           <h3 class="text-lg font-semibold text-gray-800">Elections List</h3>
@@ -47,20 +56,39 @@
       <div class="space-y-6 mb-6">
         <!-- Current Election Section -->
         <div v-if="currentElection" class="space-y-3">
-          <h4 class="text-sm font-medium text-gray-700">Current Election</h4>
+          <div class="flex justify-between items-center">
+            <h4 class="text-sm font-medium text-gray-700">Current Election</h4>
+
+          </div>
           <div class="p-4 rounded-lg border border-blue-200 bg-blue-50/50">
             <div class="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4">
               <div class="flex-1">
                 <div class="flex flex-col sm:flex-row sm:items-center gap-2">
                   <span class="font-medium text-xl text-blue-800">{{ currentElection.title }}</span>
+                  <span v-if="currentElection.status === 'upcoming'" class="px-2 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
+                    Upcoming
+                  </span>
+                  <span v-else-if="currentElection.status === 'active'" class="px-2 py-0.5 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+                    Active
+                  </span>
+                  <span v-else class="px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-800 rounded-full">
+                    Ended
+                  </span>
                 </div>
                 <p class="text-md text-blue-700 mt-1">{{ currentElection.description }}</p>
                 <div class="text-xs mt-3 flex items-center gap-2 font-medium text-blue-600">
                   <i class="pi pi-calendar"></i>
-                  {{ formatDateRange(currentElection.start_date, currentElection.end_date) }}
+                  <span v-if="currentElection.start_date && currentElection.end_date">
+                    {{ formatDateRange(currentElection.start_date, currentElection.end_date) }}
+                  </span>
+                  <span v-else class="text-amber-600">
+                    <i class="pi pi-exclamation-circle mr-1"></i>
+                    Election dates not yet set
+                  </span>
                 </div>
               </div>
               <div class="flex gap-2 lg:flex-shrink-0">
+
                 <NuxtLink :to="`/elections/${currentElection.id}`">
                   <Button label="View" icon="pi pi-eye" outlined size="small" />
                 </NuxtLink>
@@ -72,6 +100,25 @@
                   size="small" 
                   @click="navigateToResults(currentElection.id)"
                 />
+                <div v-if="authStore.isAdmin" class="flex gap-2">
+                  <Button 
+                    icon="pi pi-pencil" 
+                    size="small" 
+                    outlined 
+                    @click="openEditDialog(currentElection)"
+                    title="Edit Election"
+                  />
+                  <!--
+                  <Button 
+                    icon="pi pi-trash" 
+                    size="small" 
+                    outlined 
+                    severity="danger"
+                    @click="openDeleteDialog(currentElection)"
+                    title="Delete Election"
+                  />
+                  -->
+                </div>
               </div>
             </div>
           </div>
@@ -118,10 +165,26 @@
     <!-- Success Toast -->
     <Toast />
 
-    <!-- Modal -->
+    <!-- Create Election Modal -->
     <CreateElectionModal
       v-model:visible="showModal"
       @create="handleCreateElection"
+    />
+
+    <!-- Update Election Dialog -->
+    <UpdateElectionDialog
+      :visible="showUpdateDialog"
+      @update:visible="(val) => showUpdateDialog = val"
+      :election="selectedElection"
+      @updated="handleElectionUpdated"
+    />
+
+    <!-- Delete Confirmation Dialog -->
+    <DeleteElectionDialog
+      :visible="showDeleteDialog"
+      @update:visible="(val) => showDeleteDialog = val"
+      :election="selectedElection"
+      @deleted="handleElectionDeleted"
     />
   </div>
 </template>
@@ -132,6 +195,8 @@ import { storeToRefs } from 'pinia'
 import { useToast } from "primevue/usetoast"
 import { useRouter } from 'vue-router'
 import CreateElectionModal from "./components/create.vue"
+import UpdateElectionDialog from "./components/UpdateElectionDialog.vue"
+import DeleteElectionDialog from "./components/DeleteElectionDialog.vue"
 import { useElectionStore } from '../../../stores/elections'
 import { useAuthStore } from '../../../stores/auth'
 import AppBreadCrumbs from '~/components/AppBreadCrumbs.vue'
@@ -146,16 +211,10 @@ const authStore = useAuthStore();
 const toast = useToast()
 const router = useRouter()
 const showModal = ref(false)
+const showUpdateDialog = ref(false)
+const showDeleteDialog = ref(false)
+const selectedElection = ref(null)
 
-const home = ref({
-    label: 'Dashboard',
-    icon: 'pi pi-home',
-    route: '/dashboard'
-});
-
-const items = ref([
-    { label: 'Elections', icon: 'pi pi-chart-bar' }
-]);
 
 // Computed properties for current and past elections
 const currentElection = computed(() => {
@@ -176,7 +235,12 @@ const hasActiveElections = computed(() => {
 // Use the elections store
 const electionStore = useElectionStore()
 const { elections, loading, error } = storeToRefs(electionStore)
-const { fetchElections, createElection } = electionStore
+const { 
+  fetchElections, 
+  createElection, 
+  updateCurrentElection, 
+  deleteCurrentElection 
+} = electionStore
 
 // Fetch elections on component mount
 onMounted(() => {
@@ -220,23 +284,68 @@ const navigateToResults = (electionId) => {
   router.push(`/elections/${electionId}/results`)
 }
 
-// Helper function to format date ranges
+// Open edit dialog for election
+const openEditDialog = (election) => {
+  selectedElection.value = { ...election }
+  showUpdateDialog.value = true
+}
+
+// Open delete confirmation dialog
+const openDeleteDialog = (election) => {
+  selectedElection.value = { ...election }
+  showDeleteDialog.value = true
+}
+
+// Handle election update
+const handleElectionUpdated = (updatedElection) => {
+  toast.add({
+    severity: 'success',
+    summary: 'Success',
+    detail: 'Election updated successfully',
+    life: 3000
+  })
+  fetchElections()
+}
+
+// Handle election deletion
+const handleElectionDeleted = () => {
+  toast.add({
+    severity: 'success',
+    summary: 'Success',
+    detail: 'Election deleted successfully',
+    life: 3000
+  })
+  fetchElections()
+}
+
+// Helper function to format date ranges with times
 const formatDateRange = (startDate, endDate) => {
   if (!startDate || !endDate) return 'Dates not set'
   
-  const start = new Date(startDate).toLocaleDateString()
-  const end = new Date(endDate).toLocaleDateString()
+  const formatDateTime = (dateString) => {
+    const date = new Date(dateString)
+    return date.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
+  
+  const start = formatDateTime(startDate)
+  const end = formatDateTime(endDate)
   
   const now = new Date()
   const startDateTime = new Date(startDate)
   const endDateTime = new Date(endDate)
   
   if (now < startDateTime) {
-    return `Upcoming: ${start} - ${end}`
+    return `Starts: ${start} - Ends: ${end}`
   } else if (now > endDateTime) {
     return `Ended: ${end}`
   } else {
-    return `Schedule: ${start} - ${end}`
+    return `Ends: ${end}`
   }
 }
 </script>

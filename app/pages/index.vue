@@ -49,7 +49,14 @@
   
   <script setup>
   import { ref } from 'vue';
-  
+  useSeoMeta({
+    title: 'SSC Elections - Home',
+    description: 'Welcome to the Student Council Elections platform at Mindanao State University at Naawan',
+    ogTitle: 'SSC Elections - Home',
+    ogDescription: 'Participate in the democratic process of electing your student council representatives',
+    ogImage: '/images/og-image.jpg', // Add your OpenGraph image
+    twitterCard: 'summary_large_image',
+  })
   const navItems = ref([
     { name: 'Home', id: 'hero' },
     { name: 'About', id: 'about' },

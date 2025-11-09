@@ -406,6 +406,148 @@ export const useElectionStore = defineStore('elections', () => {
     return now > endDate;
   };
 
+  // Update/Edit the current election
+  const updateCurrentElection = async (updateData) => {
+    loading.value = true;
+    clearError();
+    
+    try {
+      // First, get the current election
+      const { data: currentElections, error: fetchErr } = await supabase
+        .from('elections')
+        .select('*')
+        .eq('is_current', 1)
+        .single();
+
+      if (fetchErr) throw new Error('No current election found');
+      
+      // Update the current election
+      const { data, error: err } = await supabase
+        .from('elections')
+        .update({
+          title: updateData.title,
+          description: updateData.description,
+          start_date: updateData.startDate,
+          end_date: updateData.endDate,
+          // Preserve existing status and is_current
+        })
+        .eq('id', currentElections.id)
+        .select()
+        .single();
+
+      if (err) throw err;
+      
+      // Update local state
+      const index = elections.value.findIndex(e => e.id === currentElections.id);
+      if (index !== -1) {
+        elections.value[index] = data;
+      }
+      
+      return { data, error: null };
+    } catch (err) {
+      error.value = err.message;
+      console.error('Error updating current election:', err);
+      return { data: null, error: err.message };
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  // Delete the current election
+  const deleteCurrentElection = async (electionId = null) => {
+    loading.value = true;
+    clearError();
+    
+    try {
+      let electionToDelete;
+      
+      // If no electionId is provided, get the current election
+      if (!electionId) {
+        const { data: currentElection, error: fetchErr } = await supabase
+          .from('elections')
+          .select('*')
+          .eq('is_current', 1)
+          .single();
+
+        if (fetchErr) throw new Error('No current election found');
+        electionToDelete = currentElection;
+      } else {
+        // Get the specified election
+        const { data: election, error: fetchErr } = await supabase
+          .from('elections')
+          .select('*')
+          .eq('id', electionId)
+          .single();
+          
+        if (fetchErr) throw new Error('Election not found');
+        electionToDelete = election;
+      }
+      
+      // First, check for any approved candidates
+      const { data: approvedCandidates, error: approvedErr } = await supabase
+        .from('candidacy_application')
+        .select('id, status')
+        .eq('election_id', electionToDelete.id)
+        .eq('status', 1); // 1 = APPROVED status
+      
+      if (approvedErr) throw approvedErr;
+      
+      // Then check for any pending candidates
+      const { data: pendingCandidates, error: pendingErr } = await supabase
+        .from('candidacy_application')
+        .select('id, status')
+        .eq('election_id', electionToDelete.id)
+        .eq('status', 0); // 0 = PENDING status
+      
+      if (pendingErr) throw pendingErr;
+      
+      const hasApprovedCandidates = approvedCandidates && approvedCandidates.length > 0;
+      const hasPendingCandidates = pendingCandidates && pendingCandidates.length > 0;
+      
+      if (hasApprovedCandidates || hasPendingCandidates) {
+        let errorMessage = 'Cannot delete election because it has ';
+        if (hasApprovedCandidates && hasPendingCandidates) {
+          errorMessage += `${approvedCandidates.length} approved candidate(s) and ${pendingCandidates.length} pending candidate(s).`;
+        } else if (hasApprovedCandidates) {
+          errorMessage += `${approvedCandidates.length} approved candidate(s).`;
+        } else {
+          errorMessage += `${pendingCandidates.length} pending candidate(s).`;
+        }
+        
+        errorMessage += ' Please remove or reject all candidates before deleting the election.';
+        throw new Error(errorMessage);
+      }
+      
+      // If we get here, it's safe to delete the election
+      const { error: deleteErr } = await supabase
+        .from('elections')
+        .delete()
+        .eq('id', electionToDelete.id);
+
+      if (deleteErr) throw deleteErr;
+      
+      // Remove from local state
+      elections.value = elections.value.filter(e => e.id !== electionToDelete.id);
+      
+      // Only demote temporary admins if this was the current election
+      if (electionToDelete.is_current === 1) {
+        const { error: resetErr } = await supabase
+          .from('user_profile')
+          .update({ is_admin: 0 })
+          .eq('is_admin', 2);
+        if (resetErr) throw resetErr;
+      }
+      
+      return { data: electionToDelete, error: null };
+    } catch (err) {
+      error.value = err.message;
+      console.error('Error deleting election:', err);
+      return { data: null, error: err.message };
+    } finally {
+      loading.value = false;
+    }
+  };
+
   return {
     // State
     elections,
@@ -425,6 +567,8 @@ export const useElectionStore = defineStore('elections', () => {
     clearError,
     extendElectionEndDate,
     forceEndElection,
-    isPastEndDate
+    isPastEndDate,
+    updateCurrentElection,
+    deleteCurrentElection,
   };
 });

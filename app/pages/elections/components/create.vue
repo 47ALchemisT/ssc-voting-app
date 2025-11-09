@@ -32,7 +32,7 @@
       </div>
 
       <div class="flex flex-col gap-2">
-        <label for="startDate" class="font-semibold">Start Date *</label>
+        <label for="startDate" class="font-semibold">Start Date & Time *</label>
         <Calendar 
           v-model="form.startDate" 
           id="startDate" 
@@ -40,13 +40,19 @@
           class="w-full" 
           :class="{ 'p-invalid': errors.startDate }"
           dateFormat="mm/dd/yy"
+          :timeOnly="false"
+          showTime
+          hourFormat="12"
+          :showSeconds="false"
           :minDate="new Date()"
+          :stepMinute="15"
+          placeholder="Select date and time"
         />
         <small v-if="errors.startDate" class="p-error">{{ errors.startDate }}</small>
       </div>
 
       <div class="flex flex-col gap-2">
-        <label for="endDate" class="font-semibold">End Date *</label>
+        <label for="endDate" class="font-semibold">End Date & Time *</label>
         <Calendar 
           v-model="form.endDate" 
           id="endDate" 
@@ -54,7 +60,13 @@
           class="w-full" 
           :class="{ 'p-invalid': errors.endDate }"
           dateFormat="mm/dd/yy"
+          :timeOnly="false"
+          showTime
+          hourFormat="12"
+          :showSeconds="false"
           :minDate="form.startDate || new Date()"
+          :stepMinute="15"
+          placeholder="Select date and time"
         />
         <small v-if="errors.endDate" class="p-error">{{ errors.endDate }}</small>
       </div>
