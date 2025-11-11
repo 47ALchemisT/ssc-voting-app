@@ -2,9 +2,11 @@
 import { defineStore } from 'pinia';
 import { useSupabaseClient } from '#imports';
 import { ref } from 'vue';
+import { useAuthStore } from './auth';
 
 export const usePartylistsStore = defineStore('partylists', () => {
     const supabase = useSupabaseClient()
+    const authStore = useAuthStore()
     const partylists = ref([])
     const loading = ref(false)
     const error = ref(null)
@@ -13,13 +15,14 @@ export const usePartylistsStore = defineStore('partylists', () => {
         error.value = null
     }
 
-    const fetchPartylists = async () => {
+    const fetchMyPartylist = async () => {
         loading.value = true
         clearError()
         try {
             const { data, error: err } = await supabase
                 .from('partylists')
                 .select('*')
+                .eq('user_id', authStore.profile.id)
                 .order('created_at', { ascending: false })
             if (err) throw err
             partylists.value = data || []
@@ -33,21 +36,121 @@ export const usePartylistsStore = defineStore('partylists', () => {
         }
     }
 
+    const fetchPartylists = async () => {
+        loading.value = true
+        clearError()
+        try {
+            const { data, error: err } = await supabase
+                .from('partylists')
+                .select('*')
+                .eq('status', 1)
+                .order('created_at', { ascending: false })
+            if (err) throw err
+            partylists.value = data || []
+            return { data, error: null }
+        } catch (err) {
+            error.value = err.message
+            console.error('Error fetching partylists:', err)
+            return { data: null, error: err.message }
+        } finally {
+            loading.value = false
+        }
+    }
+
+    const updateParylistStatus = async (id, status) => {
+        clearError()
+        loading.value = true
+        try {
+            const { error: err } = await supabase
+                .from('partylists')
+                .update({ status })
+                .eq('id', id)
+            if (err) throw err
+            return { error: null }
+        } catch (err) {
+            error.value = err.message
+            console.error('Error updating partylist status:', err)
+            return { error: err.message }
+        } finally {
+            loading.value = false
+        }
+    }
+
+    const fetchPendingPartylists = async () => {
+        loading.value = true
+        clearError()
+        try {
+            const { data, error: err } = await supabase
+                .from('partylists')
+                .select('*')
+                .eq('status', 0)
+                .order('created_at', { ascending: false })
+            if (err) throw err
+            partylists.value = data || []
+            return { data, error: null }
+        } catch (err) {
+            error.value = err.message
+            console.error('Error fetching partylists:', err)
+            return { data: null, error: err.message }
+        } finally {
+            loading.value = false
+        }
+    }
+
+    const canCreatePartylist = async () => {
+        clearError()
+        try {
+            const { data, error: err } = await supabase
+                .from('partylists')
+                .select('status')
+                .eq('user_id', authStore.profile.id)
+                .in('status', [0, 1]) // 0 = pending, 1 = approved
+                .limit(1)
+            
+            if (err) throw err
+            return { canCreate: data.length === 0, error: null }
+        } catch (err) {
+            error.value = err.message
+            console.error('Error checking partylist creation eligibility:', err)
+            return { canCreate: false, error: err.message }
+        }
+    }
+
     const createPartylist = async (partylistData) => {
         clearError()
         loading.value = true
         try {
+            // Check if user can create a new partylist
+            const { canCreate, error: checkError } = await canCreatePartylist()
+            if (checkError) throw checkError
+            if (!canCreate) {
+                throw new Error('You already have an active partylist. Please wait for it to be reviewed.')
+            }
+            
+            // Ensure user profile is loaded
+            if (!authStore.profile) {
+                await authStore.fetchProfile()
+            }
+            
+            if (!authStore.profile) {
+                throw new Error('User profile not found')
+            }
+
             const { data, error: err } = await supabase
                 .from('partylists')
                 .insert({
                     name: partylistData.name,
                     description: partylistData.description || null,
                     platform: partylistData.platform || null,
-                    date_founded: partylistData.date_founded || null
+                    date_founded: partylistData.date_founded || null,
+                    user_id: authStore.profile.id,
+                    status: 0 // Set status to pending by default
                 })
                 .select()
                 .single()
+                
             if (err) throw err
+            
             partylists.value = [data, ...partylists.value]
             return { data, error: null }
         } catch (err) {
@@ -94,19 +197,29 @@ export const usePartylistsStore = defineStore('partylists', () => {
         try {
             const { error: err } = await supabase
                 .from('partylists')
-                .delete()
+                .update({ status: 3 })
                 .eq('id', id)
+                .select()
+                .single()
+                
             if (err) throw err
-            partylists.value = partylists.value.filter(partylist => partylist.id !== id)
-            return { error: null }
+            
+            // Update local state
+            const index = partylists.value.findIndex(p => p.id === id)
+            if (index !== -1) {
+                partylists.value[index].status = 3
+            }
+            
+            return { data: { id, status: 3 }, error: null }
         } catch (err) {
             error.value = err.message
-            console.error('Error deleting partylist:', err)
+            console.error('Error deactivating partylist:', err)
             return { error: err.message }
         } finally {
             loading.value = false
         }
     }
+
 
     return {
         partylists,
@@ -116,6 +229,10 @@ export const usePartylistsStore = defineStore('partylists', () => {
         fetchPartylists,
         createPartylist,
         updatePartylist,
-        deletePartylist
+        deletePartylist,
+        fetchPendingPartylists, 
+        updateParylistStatus,
+        fetchMyPartylist,
+        canCreatePartylist
     }
 })

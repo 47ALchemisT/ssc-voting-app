@@ -222,10 +222,14 @@
             v-model="passwordForm.currentPassword" 
             :feedback="false" 
             toggleMask 
+            placeholder="Enter your current password"
             :disabled="changingPassword"
+            :class="{ 'p-invalid': currentPasswordError }"
             class="w-full"
             inputClass="w-full"
+            @input="currentPasswordError = ''"
           />
+          <small v-if="currentPasswordError" class="p-error text-red-500">{{ currentPasswordError }}</small>
         </div>
         <div class="field mt-4">
           <label for="newPassword">{{ isGoogleUser ? 'New Password' : 'New Password' }}</label>
@@ -233,6 +237,7 @@
             id="newPassword" 
             v-model="passwordForm.newPassword" 
             :feedback="true" 
+            placeholder="Must be at least 8 characters long"
             toggleMask 
             :disabled="changingPassword"
             class="w-full"
@@ -246,11 +251,16 @@
             v-model="passwordForm.confirmPassword" 
             :feedback="false" 
             toggleMask 
+            placeholder="Re-enter the password"
             :disabled="changingPassword"
+            :class="{ 'p-invalid': confirmPasswordError || passwordMismatchError }"
             class="w-full"
             inputClass="w-full"
+            @input="confirmPasswordError = ''; passwordMismatchError = ''"
             @keyup.enter="changePassword"
           />
+          <small v-if="confirmPasswordError" class="p-error text-red-500">{{ confirmPasswordError }}</small>
+          <small v-if="passwordMismatchError" class="p-error text-red-500">{{ passwordMismatchError }}</small>
         </div>
         <div v-if="isGoogleUser" class="text-sm text-gray-500 mt-2">
           <i class="pi pi-info-circle mr-1"></i>
@@ -314,6 +324,9 @@ const isGoogleUser = computed(() => {
 // Password change dialog state
 const showChangePasswordDialog = ref(false)
 const changingPassword = ref(false)
+const currentPasswordError = ref('')
+const confirmPasswordError = ref('')
+const passwordMismatchError = ref('')
 const passwordForm = ref({
   currentPassword: '',
   newPassword: '',
@@ -414,10 +427,22 @@ const resetForm = () => {
 const changePassword = async () => {
   try {
     changingPassword.value = true
+    currentPasswordError.value = ''
+    confirmPasswordError.value = ''
+    passwordMismatchError.value = ''
+    
+    // Validate password length
+    if (passwordForm.value.newPassword.length < 8) {
+      confirmPasswordError.value = 'Password must be at least 8 characters long'
+      changingPassword.value = false
+      return
+    }
     
     // Validate passwords match
     if (passwordForm.value.newPassword !== passwordForm.value.confirmPassword) {
-      throw new Error('New password and confirm password do not match')
+      passwordMismatchError.value = 'New password and confirm password did not match, kindly check and try again.'
+      changingPassword.value = false
+      return
     }
     
     // For Google users, we don't need the current password
@@ -447,12 +472,22 @@ const changePassword = async () => {
     showChangePasswordDialog.value = false
   } catch (err) {
     console.error('Failed to change password:', err)
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: err.message || 'Failed to change password',
-      life: 3000
-    })
+    
+    // Check if error is about incorrect current password
+    const errorMessage = err.message || 'Failed to change password'
+    if (errorMessage.toLowerCase().includes('current password') || 
+        errorMessage.toLowerCase().includes('incorrect password') ||
+        errorMessage.toLowerCase().includes('invalid password') ||
+        errorMessage.toLowerCase().includes('wrong password')) {
+      currentPasswordError.value = 'Current password is incorrect'
+    } else {
+      toast.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: errorMessage,
+        life: 3000
+      })
+    }
   } finally {
     changingPassword.value = false
   }

@@ -5,11 +5,18 @@
             <h1 class="text-xl font-medium">Colleges</h1>
             <p class="text-sm text-gray-500">Manage your colleges here</p>
         </div>
-        <AddCollege 
-          ref="addCollegeDialog"
-          @college-added="refreshColleges" 
-          @college-updated="refreshColleges"
-        />
+        <div class="flex  gap-3">
+          <!-- View Toggle -->
+           <div>
+            <SelectButton v-model="viewMode" :options="viewOptions" size="small" />
+           </div>
+          
+          <AddCollege 
+            ref="addCollegeDialog"
+            @college-added="refreshColleges" 
+            @college-updated="refreshColleges"
+          />
+        </div>
     </div>
 
     <div v-if="collegesStore.loading && collegesStore.colleges.length === 0" class="text-center py-12">
@@ -28,7 +35,8 @@
       <p class="text-sm text-gray-500 mt-1">Click the "Add College" button to create one</p>
     </div>
 
-    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <!-- Grid View -->
+    <div v-else-if="viewMode === 'Grid'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       <div 
         v-for="college in collegesStore.colleges" 
         :key="college.id"
@@ -65,6 +73,54 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- Table View -->
+    <div v-else class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <DataTable 
+        :value="collegesStore.colleges" 
+        :paginator="true" 
+        :rows="10"
+        :rowsPerPageOptions="[5, 10, 20, 50]"
+        stripedRows
+        class="p-datatable-sm"
+      >
+        <Column field="college_logo" header="Logo" style="width: 80px">
+          <template #body="slotProps">
+            <div class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden">
+              <img 
+                v-if="slotProps.data.college_logo" 
+                :src="slotProps.data.college_logo" 
+                :alt="`${slotProps.data.college_name} logo`"
+                class="w-full h-full object-cover"
+              />
+              <i v-else class="pi pi-institution text-xl text-gray-400"></i>
+            </div>
+          </template>
+        </Column>
+        
+        <Column field="college_name" header="College Name" sortable>
+          <template #body="slotProps">
+            <span class="font-medium">{{ slotProps.data.college_name }}</span>
+          </template>
+        </Column>
+        
+        <Column field="alias" header="Alias" sortable></Column>
+        
+        <Column header="Actions" style="width: 100px">
+          <template #body="slotProps">
+            <Button 
+              icon="pi pi-ellipsis-v" 
+              variant="text"
+              rounded
+              severity="secondary"
+              @click="openMenu(slotProps.data, $event)"
+              aria-haspopup="true"
+              aria-controls="college_menu"
+            />
+          </template>
+        </Column>
+      </DataTable>
     </div>
 
     <!-- Context Menu -->
@@ -107,6 +163,10 @@ const menu = ref();
 const selectedCollege = ref(null);
 const deleteDialogVisible = ref(false);
 const addCollegeDialog = ref(null);
+
+// View mode state
+const viewMode = ref('Grid');
+const viewOptions = ref(['Grid', 'Table']);
 
 // Menu items for each college
 const menuItems = ref([

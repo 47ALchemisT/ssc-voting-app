@@ -53,71 +53,76 @@
       </div>
 
       <!-- Elections list -->
-      <div class="space-y-6 mb-6">
+      <div class=" mb-6">
         <!-- Current Election Section -->
-        <div v-if="currentElection" class="space-y-3">
-          <div class="flex justify-between items-center">
-            <h4 class="text-sm font-medium text-gray-700">Current Election</h4>
-
-          </div>
-          <div class="p-4 rounded-lg border border-blue-200 bg-blue-50/50">
-            <div class="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4">
+        <div v-if="currentElection" class="space-y-3 py-3">
+          <div class="relative p-6 rounded-xl border-2 border-blue-400 bg-gradient-to-br from-blue-50 via-blue-50 to-indigo-50 ">
+            <!-- Current Election Badge -->
+            <div class="absolute -top-3 left-6">
+              <span class="px-4 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-full shadow-md flex items-center gap-2">
+                <i class="pi pi-star-fill"></i>
+                CURRENT ELECTION
+              </span>
+            </div>
+            
+            <div class="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4 mt-2">
               <div class="flex-1">
-                <div class="flex flex-col sm:flex-row sm:items-center gap-2">
-                  <span class="font-medium text-xl text-blue-800">{{ currentElection.title }}</span>
-                  <span v-if="currentElection.status === 'upcoming'" class="px-2 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
-                    Upcoming
-                  </span>
-                  <span v-else-if="currentElection.status === 'active'" class="px-2 py-0.5 text-xs font-medium bg-green-100 text-green-800 rounded-full">
-                    Active
-                  </span>
-                  <span v-else class="px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-800 rounded-full">
-                    Ended
-                  </span>
+                <div class="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
+                  <span class="font-bold text-2xl text-blue-900">{{ currentElection.title }}</span>
+
                 </div>
-                <p class="text-md text-blue-700 mt-1">{{ currentElection.description }}</p>
-                <div class="text-xs mt-3 flex items-center gap-2 font-medium text-blue-600">
-                  <i class="pi pi-calendar"></i>
-                  <span v-if="currentElection.start_date && currentElection.end_date">
-                    {{ formatDateRange(currentElection.start_date, currentElection.end_date) }}
-                  </span>
-                  <span v-else class="text-amber-600">
-                    <i class="pi pi-exclamation-circle mr-1"></i>
-                    Election dates not yet set
-                  </span>
+                <p class="text-base text-blue-800 mt-2 font-medium">{{ currentElection.description }}</p>
+                
+                <div class="flex items-center gap-2 mt-4">
+                  <div class="text-sm flex items-center gap-2 font-semibold text-blue-700 bg-blue-200 px-3 py-2 rounded-lg inline-flex">
+                    <i class="pi pi-calendar text-lg"></i>
+                    <span v-if="currentElection.start_date && currentElection.end_date">
+                      {{ formatDateRange(currentElection.start_date, currentElection.end_date) }}
+                    </span>
+                    <span v-else class="text-amber-700">
+                      <i class="pi pi-exclamation-circle mr-1"></i>
+                      Election dates not yet set
+                    </span>
+                  </div>
+                  <div>
+                    <span v-if="currentElection.status === 'upcoming'" class="px-3 py-2 text-sm font-semibold bg-yellow-100 text-yellow-800 rounded-lg border border-yellow-300">
+                      <i class="pi pi-clock mr-1"></i>
+                      Upcoming
+                    </span>
+                    <span v-else-if="currentElection.status === 'ongoing'" class="px-3 py-2 text-sm font-semibold bg-green-100 text-green-800 rounded-lg border border-green-300 animate-pulse">
+                      <i class="pi pi-check-circle mr-1"></i>
+                      Active Now
+                    </span>
+                    <span v-else class="px-3 py-2 text-sm font-semibold bg-gray-100 text-gray-800 rounded-lg border border-gray-300">
+                      <i class="pi pi-check mr-1"></i>
+                      Ended
+                    </span>
+                  </div>
                 </div>
+
               </div>
               <div class="flex gap-2 lg:flex-shrink-0">
-
                 <NuxtLink :to="`/elections/${currentElection.id}`">
-                  <Button label="View" icon="pi pi-eye" outlined size="small" />
+                  <Button label="View Details" icon="pi pi-eye" severity="info" size="small" />
                 </NuxtLink>
                 <Button 
                   v-if="currentElection.is_current !== 1"
-                  label="Results" 
                   icon="pi pi-chart-bar" 
-                  outlined 
+                  severity="success"
                   size="small" 
+                  v-tooltip.top="'View Results'"
                   @click="navigateToResults(currentElection.id)"
                 />
                 <div v-if="authStore.isAdmin" class="flex gap-2">
                   <Button 
                     icon="pi pi-pencil" 
                     size="small" 
-                    outlined 
+                    v-tooltip.top="'Edit Election Info'"
+                    severity="warning"
+                    outlined
                     @click="openEditDialog(currentElection)"
                     title="Edit Election"
                   />
-                  <!--
-                  <Button 
-                    icon="pi pi-trash" 
-                    size="small" 
-                    outlined 
-                    severity="danger"
-                    @click="openDeleteDialog(currentElection)"
-                    title="Delete Election"
-                  />
-                  -->
                 </div>
               </div>
             </div>
@@ -126,38 +131,75 @@
 
         <!-- Past Elections Section -->
         <div v-if="pastElections.length > 0" class="space-y-3">
-          <h4 class="text-sm font-medium text-gray-700">Past Elections</h4>
-          <ul class="space-y-3">
-            <li 
-              v-for="election in pastElections" 
-              :key="election.id"
-              class="p-4 rounded-lg border border-gray-200 bg-white bg-gray-50/50"
+          <div class="flex justify-between items-center">
+            <div>
+              <h4 class="text-sm font-medium text-gray-700">Past Elections</h4>
+              <p class="text-sm text-gray-500">List of previous elections</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <div>
+                <IconField class="w-72">
+                  <InputIcon class="pi pi-search" />
+                  <InputText size="small" v-model="searchQuery" placeholder="Search..." class="w-full" />
+                </IconField>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+            <DataTable 
+              :value="filteredPastElections" 
+              :paginator="true" 
+              :rows="10"
+              :rowsPerPageOptions="[5, 10, 20]"
+              stripedRows
+              class="p-datatable-sm"
             >
-              <div class="flex flex-col lg:flex-row lg:justify-between gap-4">
-                <div class="flex-1">
-                  <div class="font-medium text-gray-800">{{ election.title }}</div>
-                  <p class="text-sm text-gray-600 mt-3">{{ election.description }}</p>
-                  <div class="text-xs font-medium mt-3 text-gray-500">
-                    {{ formatDateRange(election.start_date, election.end_date) }}
-                  </div>
-                </div>
-                <div class="flex gap-2 lg:flex-shrink-0">
-                  <NuxtLink :to="`/elections/${election.id}`">
-                    <Button label="View" icon="pi pi-eye" outlined size="small" />
-                  </NuxtLink>
-                  <div>
+              <Column field="title" header="Title" sortable>
+                <template #body="slotProps">
+                  <span class="font-medium text-gray-800">{{ slotProps.data.title }}</span>
+                </template>
+              </Column>
+              
+              <Column field="description" header="Description">
+                <template #body="slotProps">
+                  <span class="text-sm text-gray-600">{{ slotProps.data.description }}</span>
+                </template>
+              </Column>
+              
+              <Column field="start_date" header="Election Period" sortable>
+                <template #body="slotProps">
+                  <span class="text-xs text-gray-500">
+                    {{ formatDateRange(slotProps.data.start_date, slotProps.data.end_date) }}
+                  </span>
+                </template>
+              </Column>
+              
+              <Column header="Actions" style="width: 200px">
+                <template #body="slotProps">
+                  <div class="flex gap-2">
+                    <NuxtLink :to="`/elections/${slotProps.data.id}`">
+                      <Button label="View" icon="pi pi-eye" outlined size="small" />
+                    </NuxtLink>
                     <Button 
-                      label="Results" 
                       icon="pi pi-chart-bar" 
                       outlined 
                       size="small" 
-                      @click="navigateToResults(election.id)"
+                      v-tooltip.top="'View Results'"
+                      @click="navigateToResults(slotProps.data.id)"
                     />
                   </div>
+                </template>
+              </Column>
+
+              <template #empty>
+                <div class="flex flex-col items-center justify-center py-12">
+                  <i class="pi pi-inbox text-6xl text-gray-300 mb-4"></i>
+                  <h3 class="text-lg font-medium text-gray-700 mb-2">No Past Elections Found</h3>
+                  <p class="text-sm text-gray-500">There are no past elections to display at the moment.</p>
                 </div>
-              </div>
-            </li>
-          </ul>
+              </template>
+            </DataTable>
+          </div>
         </div>
       </div>
     </div>
@@ -194,6 +236,9 @@ import { ref, onMounted, computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useToast } from "primevue/usetoast"
 import { useRouter } from 'vue-router'
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
+import InputText from 'primevue/inputtext'
 import CreateElectionModal from "./components/create.vue"
 import UpdateElectionDialog from "./components/UpdateElectionDialog.vue"
 import DeleteElectionDialog from "./components/DeleteElectionDialog.vue"
@@ -214,6 +259,7 @@ const showModal = ref(false)
 const showUpdateDialog = ref(false)
 const showDeleteDialog = ref(false)
 const selectedElection = ref(null)
+const searchQuery = ref('')
 
 
 // Computed properties for current and past elections
@@ -223,6 +269,19 @@ const currentElection = computed(() => {
 
 const pastElections = computed(() => {
   return elections.value.filter(e => e.is_current !== 1)
+})
+
+// Filtered past elections based on search query
+const filteredPastElections = computed(() => {
+  if (!searchQuery.value) {
+    return pastElections.value
+  }
+  
+  const query = searchQuery.value.toLowerCase()
+  return pastElections.value.filter(election => 
+    election.title.toLowerCase().includes(query) ||
+    election.description.toLowerCase().includes(query)
+  )
 })
 
 // Check if there are any active elections

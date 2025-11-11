@@ -3,15 +3,14 @@
         <AppBreadCrumbs :home="home" :items="items" />
         <div class="flex justify-between items-center mb-6">
             <div>
-            <h1 class="text-xl font-semibold text-gray-800">Partylists Management</h1>
-            <p class="text-gray-500 text-sm">Create and manage partylists available for elections</p>
+                <h1 class="text-xl font-semibold text-gray-800">Partylists Management</h1>
+                <p class="text-gray-500 text-sm">Create and manage partylists available for elections</p>
             </div>
-            <Button 
-            label="Add Partylist" 
-            icon="pi pi-plus" 
-            size="small"
-            @click="openNew" 
-            />
+            <div class="flex gap-2">
+                <MyPartylist  v-if="!authStore.isAdmin"/>
+                <PendingPartylist v-if="authStore.isAdmin" @partylist-approved="fetchApprovedPartylists" />
+            </div>
+
         </div>
 
         <!-- DataTable -->
@@ -23,6 +22,15 @@
                 responsiveLayout="scroll"
                 class="p-datatable-sm"
             >
+                <template #empty>
+                <div class="p-8 text-center">
+                    <div class="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                        <i class="pi pi-user text-gray-400 text-2xl"></i>
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-1">No applications yet</h3>
+                    <p class="text-gray-500 mb-6">You haven't submitted any candidacy applications yet.</p>
+                </div>
+                </template>
                 <Column field="name" header="Name" sortable></Column>
                 <Column field="description" header="Description">
                     <template #body="{ data }">
@@ -41,16 +49,22 @@
                 </Column>
                 <Column header="Actions" :exportable="false" style="min-width: 8rem">
                     <template #body="slotProps">
-                        <Button 
-                            icon="pi pi-pencil" 
-                            class="p-button-text p-button-sm p-button-rounded p-button-primary mr-2" 
-                            @click="editPartylist(slotProps.data)" 
-                        />
-                        <Button 
-                            icon="pi pi-trash" 
-                            class="p-button-text p-button-sm p-button-rounded p-button-danger" 
-                            @click="confirmDeletePartylist(slotProps.data)" 
-                        />
+                        <div class="flex gap-2">
+                            <Button 
+                                icon="pi pi-pencil" 
+                                size="small"
+                                outlined
+                                v-tooltip.top="'Edit'"
+                                @click="editPartylist(slotProps.data)" 
+                            />
+                            <Button 
+                                icon="pi pi-times" 
+                                size="small"
+                                outlined
+                                v-tooltip.top="'Deactivate'"
+                                @click="confirmDeletePartylist(slotProps.data)" 
+                            />
+                        </div>
                     </template>
                 </Column>
             </DataTable>    
@@ -136,7 +150,7 @@
         >
             <div class="confirmation-content">
                 <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem" />
-                <span v-if="partylist">Are you sure you want to delete <b>{{ partylist.name }}</b>?</span>
+                <span v-if="partylist">Are you sure you want to deactivate <b>{{ partylist.name }}</b>?</span>
             </div>
             <template #footer>
                 <Button 
@@ -161,7 +175,20 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { usePartylistsStore } from '../../../stores/partylists'
+import { useAuthStore } from '../../../stores/auth'
+
+// Breadcrumb data
+const home = ref({
+    icon: 'pi pi-home',
+    route: '/dashboard'
+});
+
+const items = ref([
+    { label: 'Partylists', route: '/partylists' }
+]);
 import { useConfirm } from 'primevue/useconfirm'
+import PendingPartylist from './components/PendingPartylist'
+import MyPartylist from './components/MyPartylist'
 
 definePageMeta({
     layout: 'dashboard-layout',
@@ -169,10 +196,11 @@ definePageMeta({
 })
 
 const partylistsStore = usePartylistsStore()
+const authStore = useAuthStore()
 const confirm = useConfirm()
 
 // Data
-const partylists = computed(() => partylistsStore.partylists)
+const partylists = ref(null)
 const loading = ref(false)
 const saving = ref(false)
 const deleting = ref(false)
@@ -283,11 +311,28 @@ const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString()
 }
 
+const fetchApprovedPartylists = async () => {
+    loading.value = true
+    try {
+        const res = await partylistsStore.fetchPartylists()
+        if (res.error) {
+            console.error('Error loading approved partylists:', res.error)
+        } else {
+            partylists.value = res.data
+        }
+    } catch (error) {
+        console.error('Error loading approved partylists:', error)
+    } finally {
+        loading.value = false
+    }
+}
+
 // Lifecycle hooks
 onMounted(async () => {
     loading.value = true
     try {
-        await partylistsStore.fetchPartylists()
+        await fetchApprovedPartylists()
+
     } catch (error) {
         console.error('Error loading partylists:', error)
     } finally {

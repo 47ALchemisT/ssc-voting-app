@@ -207,7 +207,7 @@ const items = ref([
       { label: 'Elections', icon: 'pi-box', to: '/elections', key: 'elections' },
       { label: 'Candidacy', icon: 'pi-file-edit', to: '/candidacy', key: 'candidacy' },
       { label: 'Positions', icon: 'pi-briefcase', to: '/positions', key: 'positions', adminOnly: true },
-      { label: 'Partylists', icon: 'pi-users', to: '/partylists', key: 'partylists', adminOnly: true },
+      { label: 'Partylists', icon: 'pi-users', to: '/partylists', key: 'partylists'},
       { label: 'Colleges', icon: 'pi-building', to: '/colleges', key: 'colleges', adminOnly: true },
     ]
   },

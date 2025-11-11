@@ -10,5 +10,8 @@
         </template>
       </Card>
     </div>
+    
+    <!-- Toast Notifications -->
+    <Toast />
   </div>
 </template>

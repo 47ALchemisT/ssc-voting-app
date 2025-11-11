@@ -29,6 +29,10 @@
       <section class="flex-1 px-4 lg:px-6">
         <slot />
       </section>
+      
+      <!-- Toast Notifications -->
+      <Toast />
+      
       <!-- Inactive Account Dialog -->
       <Dialog
         v-model:visible="showInactiveDialog"
