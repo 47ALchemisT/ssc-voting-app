@@ -166,8 +166,8 @@
     <!-- Step 3: Profile Picture -->
     <div v-else-if="activeStep === 2" class="space-y-6 py-8">
       <div class="mb-4">
-        <h3 class="text-lg font-medium mb-2">Profile Picture</h3>
-        <p class="text-sm text-gray-500">Upload a clear photo of yourself (optional but recommended).</p>
+        <h3 class="text-lg font-medium mb-2">Profile Picture (Optional)</h3>
+        <p class="text-sm text-gray-500">Upload a clear photo of yourself.</p>
       </div>
 
       <div class="flex flex-col items-center justify-center py-8 border-2 border-dashed border-gray-300 rounded-lg">

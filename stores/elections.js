@@ -20,6 +20,8 @@ export const useElectionStore = defineStore('elections', () => {
       const updateData = { status };
       if (isCurrent !== null) {
         updateData.is_current = isCurrent;
+      } else if (status === 'completed') {
+        updateData.is_current = 0; // Set is_current to 0 when election is completed
       }
       
       const { data, error: err } = await supabase
@@ -53,7 +55,10 @@ export const useElectionStore = defineStore('elections', () => {
     try{
       const { data, error: err } = await supabase
         .from('elections')
-        .update({ status: 'completed' })
+        .update({ 
+          status: 'completed',
+          is_current: 0 // Set is_current to 0 when force ending election
+        })
         .eq('id', electionId)
         .select()
         .single();

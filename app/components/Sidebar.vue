@@ -1,5 +1,18 @@
 <template>
   <div class="h-full flex flex-col bg-gray-50 border-r border-gray-200 transition-all duration-300 ease-in-out relative" :class="collapsed ? 'w-20' : 'w-64'">
+    <!-- Logout Confirmation Dialog -->
+    <Dialog v-model:visible="showLogoutDialog" :draggable="false" modal header="Confirm Logout" :style="{ width: '450px' }" :closable="false">
+      <div class="flex items-center gap-4">
+        <i class="pi pi-exclamation-triangle text-yellow-500 text-4xl"></i>
+        <p class="text-gray-700">Are you sure you want to logout?</p>
+      </div>
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <Button label="Cancel" icon="pi pi-times" @click="showLogoutDialog = false" class="p-button-text" />
+          <Button label="Logout" icon="pi pi-sign-out" @click="confirmLogout" class="p-button-danger" autofocus />
+        </div>
+      </template>
+    </Dialog>
     <!-- Logo/Brand -->
     <div class="p-3 lg:p-4 flex-shrink-0">
       <div class="flex items-center justify-between">
@@ -139,6 +152,8 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import Dialog from 'primevue/dialog'
+import Button from 'primevue/button'
 
 const props = defineProps({
   collapsed: {
@@ -153,7 +168,14 @@ const authStore = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 
+const showLogoutDialog = ref(false)
+
 const logout = () => {
+  showLogoutDialog.value = true
+}
+
+const confirmLogout = () => {
+  showLogoutDialog.value = false
   authStore.signOut()
 }
 

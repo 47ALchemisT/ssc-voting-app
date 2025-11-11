@@ -64,7 +64,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  // Update user profile
+  // Update user profile - your current version looks good, but here's a cleaner alternative
   const updateProfile = async (updates) => {
     if (!user.value) return { data: null, error: 'Not authenticated' }
     
@@ -76,24 +76,24 @@ export const useAuthStore = defineStore('auth', () => {
         .from('user_profile')
         .select('id')
         .eq('user_id', user.value.id)
-        .single()
+        .maybeSingle() // Changed from .single() to .maybeSingle()
 
       let result, error
       
       if (existingProfile) {
         // Update existing profile
-        const { data, error: updateError } = await supabase
+        const response = await supabase
           .from('user_profile')
           .update(updates)
           .eq('user_id', user.value.id)
           .select()
           .single()
         
-        result = data
-        error = updateError
+        result = response.data
+        error = response.error
       } else {
         // Create new profile
-        const { data, error: createError } = await supabase
+        const response = await supabase
           .from('user_profile')
           .insert([
             {
@@ -104,14 +104,14 @@ export const useAuthStore = defineStore('auth', () => {
           .select()
           .single()
         
-        result = data
-        error = createError
+        result = response.data
+        error = response.error
       }
 
       if (error) throw error
       
       // Update local profile data
-      const updatedProfile = { ...profile.value, ...updates }
+      const updatedProfile = { ...profile.value, ...result }
       profile.value = updatedProfile
       
       // Check if profile is complete after update
@@ -123,7 +123,6 @@ export const useAuthStore = defineStore('auth', () => {
       
       return { data: updatedProfile, error: null }
       
-      return { data: result, error: null }
     } catch (error) {
       console.error('Error updating profile:', error)
       return { data: null, error }
@@ -171,13 +170,42 @@ export const useAuthStore = defineStore('auth', () => {
       const { data } = supabase.storage.from('assets').getPublicUrl(filePath)
       const publicUrl = data.publicUrl
 
-      // Save URL to profile
-      const { data: updatedProfile, error: updateError } = await supabase
+      // Check if profile exists first
+      const { data: existingProfile } = await supabase
         .from('user_profile')
-        .update({ avatar_url: publicUrl })
+        .select('id')
         .eq('user_id', user.value.id)
-        .select()
-        .single()
+        .maybeSingle() // Use maybeSingle to avoid error if no row exists
+
+      let updatedProfile, updateError
+
+      if (existingProfile) {
+        // Update existing profile
+        const result = await supabase
+          .from('user_profile')
+          .update({ avatar_url: publicUrl })
+          .eq('user_id', user.value.id)
+          .select()
+          .single()
+        
+        updatedProfile = result.data
+        updateError = result.error
+      } else {
+        // Create new profile with avatar
+        const result = await supabase
+          .from('user_profile')
+          .insert([
+            {
+              user_id: user.value.id,
+              avatar_url: publicUrl
+            }
+          ])
+          .select()
+          .single()
+        
+        updatedProfile = result.data
+        updateError = result.error
+      }
 
       if (updateError) throw updateError
 

@@ -103,7 +103,7 @@
               </div>
               <div class="flex gap-2 lg:flex-shrink-0">
                 <NuxtLink :to="`/elections/${currentElection.id}`">
-                  <Button label="View Details" icon="pi pi-eye" severity="info" size="small" />
+                  <Button label="View Details" icon="pi pi-eye" size="small" />
                 </NuxtLink>
                 <Button 
                   v-if="currentElection.is_current !== 1"

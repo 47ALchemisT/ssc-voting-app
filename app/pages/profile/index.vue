@@ -389,12 +389,10 @@ const onAvatarSelected = async (event) => {
 
   // Basic validation: type and size (max ~2MB)
   if (!file.type.startsWith('image/')) {
-    toast.add({ title: 'Invalid file', description: 'Please select an image file.', color: 'red' })
     return
   }
   const maxBytes = 2 * 1024 * 1024
   if (file.size > maxBytes) {
-    toast.add({ title: 'File too large', description: 'Image must be under 2MB.', color: 'red' })
     return
   }
 
@@ -404,10 +402,20 @@ const onAvatarSelected = async (event) => {
     if (error) throw error
 
     // Success feedback
-    toast.add({ title: 'Avatar Updated', description: 'Your profile photo was updated successfully.', color: 'green' })
+    toast.add({
+      severity: 'success',
+      summary: 'Success',
+      detail: 'Profile picture updated successfully!',
+      life: 3000
+    })
   } catch (err) {
     console.error('Avatar upload failed:', err)
-    toast.add({ title: 'Upload failed', description: err.message || 'Could not upload avatar.', color: 'red' })
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: err.message || 'Failed to upload avatar. Please try again.',
+      life: 3000
+    })
   } finally {
     uploadingAvatar.value = false
     // Clear the input value so selecting the same file again still triggers change
@@ -507,17 +515,19 @@ const saveProfile = async () => {
     if (error) throw error
     
     toast.add({
-      title: 'Success',
-      description: 'Profile updated successfully',
-      color: 'green'
+      severity: 'success',
+      summary: 'Success',
+      detail: 'Profile updated successfully',
+      life: 3000
     })
     editMode.value = false // Exit edit mode on successful save
   } catch (error) {
     console.error('Error saving profile:', error)
     toast.add({
-      title: 'Error',
-      description: error.message || 'Failed to update profile',
-      color: 'red'
+      severity: 'error',
+      summary: 'Error',
+      detail: error.message || 'Failed to update profile',
+      life: 3000
     })
   }
 }
