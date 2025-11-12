@@ -6,6 +6,9 @@
       <p class="text-gray-600 text-sm">
         Sign up using your <span class="font-semibold text-blue-600">@msunaawan.edu.ph</span> email
       </p>
+      <Message severity="info" class="text-sm">
+        Only @msunaawan.edu.ph email addresses are allowed.
+      </Message>
     </div>
 
     <!-- Google Sign Up Button -->
@@ -23,7 +26,6 @@
       <div v-if="error" class="p-3 bg-red-50 text-red-600 text-sm rounded-lg text-center">
         {{ error }}
       </div>
-      <Message size="small" severity="info">Only @msunaawan.edu.ph email addresses are allowed.</Message>
       <!-- Footer links -->
       <div class="text-center text-sm text-gray-600 pt-4 border-t border-gray-100">
         <p>

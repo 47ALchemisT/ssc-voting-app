@@ -43,9 +43,6 @@
         icon="pi pi-sign-in"
         :label="loading ? 'Signing in...' : 'Sign In'"
       />
-      <div>
-        <Message size="small" severity="info">Only @msunaawan.edu.ph email addresses are allowed.</Message>
-      </div>
 
       <!-- Error -->
       <div v-if="error" class="text-red-600 text-sm text-center">

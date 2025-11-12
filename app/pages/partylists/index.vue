@@ -47,7 +47,12 @@
                         {{ formatDate(data.date_founded) }}
                     </template>
                 </Column>
-                <Column header="Actions" :exportable="false" style="min-width: 8rem">
+                <Column 
+                    v-if="authStore.isAdmin"
+                    header="Actions" 
+                    :exportable="false" 
+                    style="min-width: 8rem"
+                >
                     <template #body="slotProps">
                         <div class="flex gap-2">
                             <Button 
@@ -187,6 +192,7 @@ const items = ref([
     { label: 'Partylists', route: '/partylists' }
 ]);
 import { useConfirm } from 'primevue/useconfirm'
+import { useToast } from 'primevue/usetoast'
 import PendingPartylist from './components/PendingPartylist'
 import MyPartylist from './components/MyPartylist'
 
@@ -198,6 +204,7 @@ definePageMeta({
 const partylistsStore = usePartylistsStore()
 const authStore = useAuthStore()
 const confirm = useConfirm()
+const toast = useToast()
 
 // Data
 const partylists = ref(null)
@@ -273,14 +280,35 @@ const savePartylist = async () => {
 
         if (isEdit.value && partylist.value) {
             await partylistsStore.updatePartylist(partylist.value.id, partylistData)
+            toast.add({
+                severity: 'success',
+                summary: 'Success',
+                detail: 'Partylist updated successfully',
+                life: 3000
+            })
         } else {
             await partylistsStore.createPartylist(partylistData)
+            toast.add({
+                severity: 'success',
+                summary: 'Success',
+                detail: 'Partylist created successfully',
+                life: 3000
+            })
         }
+        
+        // Refresh the partylists
+        await fetchApprovedPartylists()
         
         partylistDialog.value = false
         partylist.value = null
     } catch (error) {
         console.error('Error saving partylist:', error)
+        toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Failed to save partylist. Please try again.',
+            life: 3000
+        })
     } finally {
         saving.value = false
     }
