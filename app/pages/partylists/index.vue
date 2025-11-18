@@ -17,8 +17,8 @@
 
         </div>
 
-        <!-- DataTable -->
-        <div class="p-1 rounded-lg border border-gray-200">
+        <!-- DataTable for Admin -->
+        <div v-if="authStore.isAdmin" class="p-1 rounded-lg border border-gray-200">
             <DataTable 
                 :value="partylists" 
                 :loading="loading" 
@@ -52,7 +52,6 @@
                     </template>
                 </Column>
                 <Column 
-                    v-if="authStore.isAdmin"
                     header="Actions" 
                     :exportable="false" 
                     style="min-width: 8rem"
@@ -79,8 +78,95 @@
             </DataTable>    
         </div>
 
+        <!-- User's Approved Partylists -->
+        <div v-else>
+            <div class="mb-4 p-4 bg-blue-50 border border-blue-100 rounded-md">
+                <h3 class="text-lg font-semibold text-blue-900 mb-2">My Approved Partylists</h3>
+                <p class="text-sm text-blue-700">
+                    Here you can view your partylists that have been approved and are available for elections.
+                </p>
+            </div>
+            
+            <!-- Card View -->
+            <div v-if="userLoading" class="text-center p-8">
+                <ProgressSpinner />
+            </div>
+            <div v-else-if="userPartylists.length === 0" class="text-center p-8 text-gray-500">
+                <div class="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                    <i class="pi pi-flag text-gray-400 text-2xl"></i>
+                </div>
+                <h3 class="text-lg font-medium text-gray-900 mb-1">No approved partylists yet</h3>
+                <p class="text-gray-500">Your partylists will appear here once they are approved.</p>
+            </div>
+            <div v-else class="mx-auto">
+                <div 
+                    v-for="partylist in userPartylists" 
+                    :key="partylist.id"
+                    class="bg-white rounded-2xl p-8 border border-gray-200 transition-all duration-300 mb-6 last:mb-0"
+                >
+                    <!-- Header Section -->
+                    <div class="flex items-start justify-between mb-6">
+                        <div class="flex items-start gap-4">
+                            <div class="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-md flex-shrink-0">
+                                <i class="pi pi-flag text-white text-xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-2xl font-bold text-gray-900 mb-2">{{ partylist.name }}</h3>
+                                <Tag 
+                                    :value="'Approved'" 
+                                    severity="success" 
+                                    class="text-xs font-medium"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Content Section -->
+                    <div class="space-y-5">
+                        <!-- Description -->
+                        <div v-if="partylist.description" class="pb-5 border-b border-gray-100">
+                            <p class="text-gray-700 leading-relaxed">{{ partylist.description }}</p>
+                        </div>
+                        
+                        <!-- Platform -->
+                        <div v-if="partylist.platform" class="pb-5 border-b border-gray-100">
+                            <div class="flex items-center gap-2 mb-3">
+                                <div class="w-1 h-5 bg-blue-500 rounded-full"></div>
+                                <h5 class="text-sm font-semibold text-gray-900 uppercase tracking-wide">Platform</h5>
+                            </div>
+                            <p class="text-gray-700 leading-relaxed pl-3">{{ partylist.platform }}</p>
+                        </div>
+                        
+                        <!-- Metadata -->
+                        <div class="flex flex-wrap gap-6 pt-2">
+                            <div class="flex items-center gap-3">
+                                <div class="w-9 h-9 bg-gray-50 rounded-lg flex items-center justify-center">
+                                    <i class="pi pi-calendar text-gray-600 text-sm"></i>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-500 font-medium">Founded</p>
+                                    <p class="text-sm text-gray-900 font-semibold">{{ formatDate(partylist.date_founded) }}</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center gap-3">
+                                <div class="w-9 h-9 bg-gray-50 rounded-lg flex items-center justify-center">
+                                    <i class="pi pi-clock text-gray-600 text-sm"></i>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-500 font-medium">Registered</p>
+                                    <p class="text-sm text-gray-900 font-semibold">{{ formatDate(partylist.created_at) }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Add/Edit Dialog -->
         <Dialog 
+            v-if="authStore.isAdmin"
             v-model:visible="partylistDialog" 
             :style="{width: '550px'}" 
             :header="dialogTitle" 
@@ -152,6 +238,7 @@
 
         <!-- Delete Confirmation -->
         <Dialog 
+            v-if="authStore.isAdmin"
             v-model:visible="deletePartylistDialog" 
             :style="{width: '450px'}" 
             header="Confirm" 
@@ -199,6 +286,7 @@ import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
 import PendingPartylist from './components/PendingPartylist'
 import MyPartylist from './components/MyPartylist'
+import PartylistTable from './components/PartylistTable'
 
 definePageMeta({
     layout: 'dashboard-layout',
@@ -212,7 +300,9 @@ const toast = useToast()
 
 // Data
 const partylists = ref(null)
+const userPartylists = ref([])
 const loading = ref(false)
+const userLoading = ref(false)
 const saving = ref(false)
 const deleting = ref(false)
 const submitted = ref(false)
@@ -359,12 +449,32 @@ const fetchApprovedPartylists = async () => {
     }
 }
 
+const fetchUserApprovedPartylists = async () => {
+    userLoading.value = true
+    try {
+        const res = await partylistsStore.fetchMyPartylist()
+        if (res.error) {
+            console.error('Error loading user partylists:', res.error)
+        } else {
+            // Filter only approved partylists (status = 1)
+            userPartylists.value = res.data.filter(p => p.status === 1)
+        }
+    } catch (error) {
+        console.error('Error loading user partylists:', error)
+    } finally {
+        userLoading.value = false
+    }
+}
+
 // Lifecycle hooks
 onMounted(async () => {
-    loading.value = true
     try {
-        await fetchApprovedPartylists()
-
+        if (authStore.isAdmin) {
+            loading.value = true
+            await fetchApprovedPartylists()
+        } else {
+            await fetchUserApprovedPartylists()
+        }
     } catch (error) {
         console.error('Error loading partylists:', error)
     } finally {
