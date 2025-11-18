@@ -101,24 +101,57 @@
 
             <!-- Pending Partylists -->
             <div v-if="filteredPartylists(0).length > 0" class="mb-6">
-                <h3 class="text-lg font-medium mb-4">Pending Review</h3>
-                <PartylistTable 
-                    :partylists="filteredPartylists(0)" 
-                    :loading="loading" 
-                    :error="error"
-                    @refresh="getMyPartylist"
-                />
+                <h3 class="text-lg font-medium mb-4">Pending Review ({{ filteredPartylists(0).length }})</h3>
+                <div class="grid gap-4">
+                    <div v-for="partylist in filteredPartylists(0)" :key="partylist.id" class="border border-yellow-500 rounded-lg overflow-hidden bg-white">
+                        <div class="p-5">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <div class="flex items-center mb-2">
+                                        <span class="text-xl font-semibold text-gray-800">{{ partylist.name }}</span>
+                                        <span class="ml-3 px-2.5 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
+                                            Pending Review
+                                        </span>
+                                    </div>
+                                    <p v-if="partylist.description" class="text-gray-600 mb-3">{{ partylist.description }}</p>
+                                    <div class="space-y-1 text-sm text-gray-500">
+                                        <div v-if="partylist.platform" class="flex items-start">
+                                            <i class="pi pi-file-edit mr-2 mt-1"></i>
+                                            <span>Platform: {{ partylist.platform }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex space-x-2">
+                                    <div class="flex text-xs items-center">
+                                        <i class="pi pi-calendar mr-2"></i>
+                                        <span>Submitted: {{ formatDate(partylist.created_at) }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Rejected Partylists -->
             <div v-if="filteredPartylists(2).length > 0" class="mt-8">
                 <h3 class="text-lg font-medium mb-4 text-gray-800">Rejected Partylists ({{ filteredPartylists(2).length }})</h3>
-                <PartylistTable 
-                    :partylists="filteredPartylists(2)" 
-                    :loading="loading" 
-                    :error="error"
-                    @refresh="getMyPartylist"
-                />
+                <div class="border border-red-100 rounded-lg overflow-hidden">
+                    <ul class="divide-y divide-gray-200">
+                        <li v-for="partylist in filteredPartylists(2)" :key="partylist.id" class="p-4 hover:bg-red-50">
+                            <div class="flex justify-between items-center">
+                                <div class="flex items-center">
+                                    <span class="font-medium text-gray-800">{{ partylist.name }}</span>
+                                </div>
+                                <div class="text-sm text-gray-500">
+                                    <span class="ml-2 px-2 py-0.5 text-xs font-medium bg-red-100 text-red-800 rounded-full">
+                                        Rejected
+                                    </span>
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
             </div>
             <template #footer>
 
@@ -404,6 +437,7 @@ const savePartylist = async () => {
         // Refresh the partylists
         await getMyPartylist()
         partylistDialog.value = false
+        visible.value = false  // Close the main dialog
         emit('partylist-created')
     } catch (error) {
         console.error('Error saving partylist:', error)
