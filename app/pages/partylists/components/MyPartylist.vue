@@ -53,32 +53,73 @@
                 </div>
             </div>
             
-            <TabView>
-                <TabPanel header="Pending">
-                    <PartylistTable 
-                        :partylists="filteredPartylists(0)" 
-                        :loading="loading" 
-                        :error="error"
-                        @refresh="getMyPartylist"
+            <!-- Approved Partylist Card -->
+            <div class="mb-6">
+                <h3 class="text-lg font-medium mb-4">Approved Partylist</h3>
+                <div v-if="filteredPartylists(1).length > 0" class="mb-6">
+                    <div v-for="partylist in filteredPartylists(1)" :key="partylist.id" class="border border-blue-500 rounded-lg overflow-hidden bg-white">
+                        <div class="p-5">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <div class="flex items-center mb-2">
+                                        <span class="text-xl font-semibold text-gray-800">{{ partylist.name }}</span>
+                                        <span class="ml-3 px-2.5 py-0.5 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+                                            Approved
+                                        </span>
+                                    </div>
+                                    <p v-if="partylist.description" class="text-gray-600 mb-3">{{ partylist.description }}</p>
+                                    <div class="space-y-1 text-sm text-gray-500">
+          
+                                        <div v-if="partylist.platform" class="flex items-start">
+                                            <i class="pi pi-file-edit mr-2 mt-1"></i>
+                                            <span>Platform: {{ partylist.platform }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex space-x-2">
+                                    <div class="flex text-xs items-center">
+                                        <i class="pi pi-calendar mr-2"></i>
+                                        <span>Founded: {{ formatDate(partylist.date_founded) }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div v-else class="border-2 border-dashed border-gray-200 rounded-lg p-8 text-center">
+                    <i class="pi pi-flag text-4xl text-gray-300 mb-3"></i>
+                    <p class="text-gray-500 mb-4">No approved partylist found</p>
+                    <Button 
+                        label="Create Partylist" 
+                        icon="pi pi-plus" 
+                        size="small"
+                        @click="openNew"
+                        v-if="canCreateNew"
                     />
-                </TabPanel>
-                <TabPanel header="Approved">
-                    <PartylistTable 
-                        :partylists="filteredPartylists(1)" 
-                        :loading="loading" 
-                        :error="error"
-                        @refresh="getMyPartylist"
-                    />
-                </TabPanel>
-                <TabPanel header="Rejected">
-                    <PartylistTable 
-                        :partylists="filteredPartylists(2)" 
-                        :loading="loading" 
-                        :error="error"
-                        @refresh="getMyPartylist"
-                    />
-                </TabPanel>
-            </TabView>
+                </div>
+            </div>
+
+            <!-- Pending Partylists -->
+            <div v-if="filteredPartylists(0).length > 0" class="mb-6">
+                <h3 class="text-lg font-medium mb-4">Pending Review</h3>
+                <PartylistTable 
+                    :partylists="filteredPartylists(0)" 
+                    :loading="loading" 
+                    :error="error"
+                    @refresh="getMyPartylist"
+                />
+            </div>
+
+            <!-- Rejected Partylists -->
+            <div v-if="filteredPartylists(2).length > 0" class="mt-8">
+                <h3 class="text-lg font-medium mb-4 text-gray-800">Rejected Partylists ({{ filteredPartylists(2).length }})</h3>
+                <PartylistTable 
+                    :partylists="filteredPartylists(2)" 
+                    :loading="loading" 
+                    :error="error"
+                    @refresh="getMyPartylist"
+                />
+            </div>
             <template #footer>
 
                 <Button 
@@ -198,8 +239,6 @@ import { ref, computed, onMounted } from 'vue'
 import { usePartylistsStore } from '../../../../stores/partylists'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
-import TabView from 'primevue/tabview';
-import TabPanel from 'primevue/tabpanel';
 import PartylistTable from './PartylistTable.vue';
 
 const emit = defineEmits(['partylist-created', 'partylist-approved'])

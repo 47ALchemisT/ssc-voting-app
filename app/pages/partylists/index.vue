@@ -3,8 +3,12 @@
         <AppBreadCrumbs :home="home" :items="items" />
         <div class="flex justify-between items-center mb-6">
             <div>
-                <h1 class="text-xl font-semibold text-gray-800">Partylists Management</h1>
-                <p class="text-gray-500 text-sm">Create and manage partylists available for elections</p>
+                <h1 class="text-xl font-semibold text-gray-800">
+                    {{ authStore.isAdmin ? 'Partylists Management' : 'Partylists' }}
+                </h1>
+                <p class="text-gray-500 text-sm">
+                    {{ authStore.isAdmin ? 'Approve and manage all partylists' : 'View partylists or create new partylist' }}
+                </p>
             </div>
             <div class="flex gap-2">
                 <MyPartylist  v-if="!authStore.isAdmin"/>
