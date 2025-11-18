@@ -81,6 +81,7 @@
             <div class="pt-4 border-t border-gray-200">
               <div class="flex flex-col sm:flex-row gap-2">
                 <Button
+                  v-if="authStore.isAdmin"
                   label="Voters List"
                   size="small"
                   variant="outlined"
