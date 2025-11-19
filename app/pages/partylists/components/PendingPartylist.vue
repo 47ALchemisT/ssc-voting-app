@@ -560,6 +560,24 @@ const reactivatePartylist = async () => {
         processing.value = true
         error.value = null
         
+        // Debug: Check what functions are available in the store
+        console.log('Available store functions:', Object.keys(partylistsStore))
+        console.log('checkUserActivePartylist function:', typeof partylistsStore.checkUserActivePartylist)
+        
+        // Check if the user already has an active partylist (implement directly for now)
+        const { data, error: err } = await supabase
+            .from('partylists')
+            .select('status')
+            .eq('user_id', selectedPartylist.value.user_id)
+            .in('status', [0, 1]) // 0 = pending, 1 = approved
+            .limit(1)
+        
+        if (err) throw err
+        
+        if (data.length > 0) {
+            throw new Error('Cannot reactivate: This user already has an active partylist')
+        }
+        
         // Reactivate by setting status to 1 (Approved/Active)
         const { error: updateError } = await partylistsStore.updateParylistStatus(selectedPartylist.value.id, 1)
         if (updateError) throw updateError
@@ -582,7 +600,7 @@ const reactivatePartylist = async () => {
         toast.add({
             severity: 'error',
             summary: 'Error',
-            detail: 'Failed to reactivate partylist',
+            detail: err.message || 'Failed to reactivate partylist',
             life: 3000
         })
     } finally {

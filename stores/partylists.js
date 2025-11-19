@@ -116,6 +116,25 @@ export const usePartylistsStore = defineStore('partylists', () => {
         }
     }
 
+    const checkUserActivePartylist = async (userId) => {
+        clearError()
+        try {
+            const { data, error: err } = await supabase
+                .from('partylists')
+                .select('status')
+                .eq('user_id', userId)
+                .in('status', [0, 1]) // 0 = pending, 1 = approved
+                .limit(1)
+            
+            if (err) throw err
+            return { hasActive: data.length > 0, error: null }
+        } catch (err) {
+            error.value = err.message
+            console.error('Error checking user active partylist:', err)
+            return { hasActive: false, error: err.message }
+        }
+    }
+
     const createPartylist = async (partylistData) => {
         clearError()
         loading.value = true
@@ -191,6 +210,30 @@ export const usePartylistsStore = defineStore('partylists', () => {
         }
     }
 
+    const deletePendingPartylist = async (id) => {
+        clearError()
+        loading.value = true
+        try {
+            const { error: err } = await supabase
+                .from('partylists')
+                .delete()
+                .eq('id', id)
+                
+            if (err) throw err
+            
+            // Remove from local state
+            partylists.value = partylists.value.filter(p => p.id !== id)
+            
+            return { data: { id }, error: null }
+        } catch (err) {
+            error.value = err.message
+            console.error('Error deleting pending partylist:', err)
+            return { error: err.message }
+        } finally {
+            loading.value = false
+        }
+    }
+
     const deletePartylist = async (id) => {
         clearError()
         loading.value = true
@@ -230,9 +273,11 @@ export const usePartylistsStore = defineStore('partylists', () => {
         createPartylist,
         updatePartylist,
         deletePartylist,
+        deletePendingPartylist,
         fetchPendingPartylists, 
         updateParylistStatus,
         fetchMyPartylist,
-        canCreatePartylist
+        canCreatePartylist,
+        checkUserActivePartylist
     }
 })

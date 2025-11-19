@@ -331,6 +331,13 @@ const deletePartylist = async () => {
         await partylistsStore.deletePartylist(partylist.value.id)
         deletePartylistDialog.value = false
         partylist.value = null
+        await fetchApprovedPartylists()
+        toast.add({
+            severity: 'success',
+            summary: 'Success',
+            detail: 'Partylist deactivated successfully',
+            life: 3000
+        })
     } catch (error) {
         console.error('Error deleting partylist:', error)
     } finally {

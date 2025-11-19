@@ -75,11 +75,22 @@
                                             <span>Platform: {{ partylist.platform }}</span>
                                         </div>
                                     </div>
-                                </div>
-                                <div class="flex space-x-2">
-                                    <div class="flex text-xs items-center">
+                                    <div class="flex mt-3 text-gray-500 text-xs items-center">
                                         <i class="pi pi-calendar mr-2"></i>
                                         <span>Founded: {{ formatDate(partylist.date_founded) }}</span>
+                                    </div>
+                                </div>
+                                <div class="flex space-x-2">
+                   
+                                    <div class="flex gap-2">
+                                        <Button 
+                                            icon="pi pi-pencil" 
+                                            size="small"
+                                            text
+                                            severity="secondary"
+                                            @click="editPartylist(partylist)"
+                                            v-tooltip.top="'Edit Partylist'"
+                                        />
                                     </div>
                                 </div>
                             </div>
@@ -99,62 +110,157 @@
                 </div>
             </div>
 
-            <!-- Pending Partylists -->
-            <div v-if="filteredPartylists(0).length > 0" class="mb-6">
-                <h3 class="text-lg font-medium mb-4">Pending Review ({{ filteredPartylists(0).length }})</h3>
-                <div class="grid gap-4">
-                    <div v-for="partylist in filteredPartylists(0)" :key="partylist.id" class="border border-yellow-500 rounded-lg overflow-hidden bg-white">
-                        <div class="p-5">
-                            <div class="flex justify-between items-start">
-                                <div>
-                                    <div class="flex items-center mb-2">
-                                        <span class="text-xl font-semibold text-gray-800">{{ partylist.name }}</span>
-                                        <span class="ml-3 px-2.5 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
-                                            Pending Review
-                                        </span>
-                                    </div>
-                                    <p v-if="partylist.description" class="text-gray-600 mb-3">{{ partylist.description }}</p>
-                                    <div class="space-y-1 text-sm text-gray-500">
-                                        <div v-if="partylist.platform" class="flex items-start">
-                                            <i class="pi pi-file-edit mr-2 mt-1"></i>
-                                            <span>Platform: {{ partylist.platform }}</span>
+            <!-- Show More Button -->
+            <div v-if="filteredPartylists(0).length > 0 || filteredPartylists(2).length > 0 || filteredPartylists(3).length > 0" class="mb-6 text-center">
+                <Button 
+                    :label="showOtherPartylists ? 'Hide Other Options' : 'Show More Options'" 
+                    :icon="showOtherPartylists ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"
+                    @click="showOtherPartylists = !showOtherPartylists"
+                    severity="secondary"
+                    text
+                    size="small"
+                />
+            </div>
+
+            <!-- Other Partylists Section (conditionally shown) -->
+            <div v-show="showOtherPartylists">
+                <!-- Pending Partylists -->
+                <div v-if="filteredPartylists(0).length > 0" class="mb-6">
+                    <h3 class="text-lg font-medium mb-4">Pending Review ({{ filteredPartylists(0).length }})</h3>
+                    <div class="grid gap-4">
+                        <div v-for="partylist in filteredPartylists(0)" :key="partylist.id" class="border border-yellow-500 rounded-lg overflow-hidden bg-white">
+                            <div class="p-5">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <div class="flex items-center mb-2">
+                                            <span class="text-xl font-semibold text-gray-800">{{ partylist.name }}</span>
+                                            <span class="ml-3 px-2.5 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
+                                                Pending Review
+                                            </span>
+                                        </div>
+                                        <p v-if="partylist.description" class="text-gray-600 mb-3">{{ partylist.description }}</p>
+                                        <div class="space-y-1 text-sm text-gray-500">
+                                            <div v-if="partylist.platform" class="flex items-start">
+                                                <i class="pi pi-file-edit mr-2 mt-1"></i>
+                                                <span>Platform: {{ partylist.platform }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="flex text-xs mt-3 text-gray-500 items-center">
+                                            <i class="pi pi-calendar mr-2"></i>
+                                            <span>Submitted: {{ formatDate(partylist.created_at) }}</span>
                                         </div>
                                     </div>
-                                </div>
-                                <div class="flex space-x-2">
-                                    <div class="flex text-xs items-center">
-                                        <i class="pi pi-calendar mr-2"></i>
-                                        <span>Submitted: {{ formatDate(partylist.created_at) }}</span>
+                                    <div class="flex space-x-2">
+                                        <div class="flex">
+                                            <Button 
+                                                icon="pi pi-pencil" 
+                                                size="small"
+                                                text
+                                                severity="secondary"
+                                                @click="editPartylist(partylist)"
+                                                v-tooltip.top="'Edit Partylist'"
+                                            />
+                                            <Button 
+                                                icon="pi pi-trash" 
+                                                size="small"
+                                                text
+                                                severity="secondary"
+                                                @click="confirmDeletePartylist(partylist)"
+                                                v-tooltip.top="'Delete Partylist'"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Rejected Partylists -->
-            <div v-if="filteredPartylists(2).length > 0" class="mt-8">
-                <h3 class="text-lg font-medium mb-4 text-gray-800">Rejected Partylists ({{ filteredPartylists(2).length }})</h3>
-                <div class="border border-red-100 rounded-lg overflow-hidden">
-                    <ul class="divide-y divide-gray-200">
-                        <li v-for="partylist in filteredPartylists(2)" :key="partylist.id" class="p-4 hover:bg-red-50">
-                            <div class="flex justify-between items-center">
-                                <div class="flex items-center">
-                                    <span class="font-medium text-gray-800">{{ partylist.name }}</span>
-                                </div>
-                                <div class="text-sm text-gray-500">
-                                    <span class="ml-2 px-2 py-0.5 text-xs font-medium bg-red-100 text-red-800 rounded-full">
-                                        Rejected
+                <!-- Rejected and Deactivated Partylists Tabs -->
+                <div v-if="filteredPartylists(2).length > 0 || filteredPartylists(3).length > 0" class="mt-8">
+                    <TabView>
+                        <TabPanel>
+                            <template #header>
+                                <div class="flex items-center gap-2">
+                                    <span>Rejected</span>
+                                    <span v-if="filteredPartylists(2).length > 0" class="bg-red-100 text-red-800 text-xs font-medium px-2 py-0.5 rounded-full">
+                                        {{ filteredPartylists(2).length }}
                                     </span>
                                 </div>
+                            </template>
+                            
+                            <div v-if="filteredPartylists(2).length > 0">
+                                <div class="border border-red-100 rounded-lg overflow-hidden">
+                                    <ul class="divide-y divide-gray-200">
+                                        <li v-for="partylist in filteredPartylists(2)" :key="partylist.id" class="p-4 hover:bg-red-50 transition-colors">
+                                            <div class="flex justify-between items-center">
+                                                <div class="flex-1">
+                                                    <span class="font-medium text-gray-800">{{ partylist.name }}</span>
+                                                    <p v-if="partylist.description" class="text-sm text-gray-500 mt-1">
+                                                        {{ partylist.description }}
+                                                    </p>
+                                                </div>
+                                                <div class="ml-4">
+                                                    <span class="px-2.5 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-full">
+                                                        Rejected
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </li>
+                                    </ul>
+                                </div>
                             </div>
-                        </li>
-                    </ul>
+                            
+                            <div v-else class="border-2 border-dashed border-gray-200 rounded-lg p-8 text-center">
+                                <i class="pi pi-times-circle text-4xl text-gray-300 mb-3"></i>
+                                <p class="text-gray-500 font-medium">No rejected partylists</p>
+                                <p class="text-gray-400 text-sm mt-1">Partylists that were rejected will appear here</p>
+                            </div>
+                        </TabPanel>
+
+                        <TabPanel>
+                            <template #header>
+                                <div class="flex items-center gap-2">
+                                    <span>Deactivated</span>
+                                    <span v-if="filteredPartylists(3).length > 0" class="bg-gray-100 text-gray-800 text-xs font-medium px-2 py-0.5 rounded-full">
+                                        {{ filteredPartylists(3).length }}
+                                    </span>
+                                </div>
+                            </template>
+                            
+                            <div v-if="filteredPartylists(3).length > 0">
+                                <div class="border border-gray-200 rounded-lg overflow-hidden">
+                                    <ul class="divide-y divide-gray-200">
+                                        <li v-for="partylist in filteredPartylists(3)" :key="partylist.id" class="p-4 hover:bg-gray-50 transition-colors">
+                                            <div class="flex justify-between items-center">
+                                                <div class="flex-1">
+                                                    <span class="font-medium text-gray-800">{{ partylist.name }}</span>
+                                                    <p v-if="partylist.description" class="text-sm text-gray-500 mt-1">
+                                                        {{ partylist.description }}
+                                                    </p>
+                                                </div>
+                                                <div class="ml-4">
+                                                    <span class="px-2.5 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full">
+                                                        Deactivated
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            <div v-else class="border-2 border-dashed border-gray-200 rounded-lg p-8 text-center">
+                                <i class="pi pi-ban text-4xl text-gray-300 mb-3"></i>
+                                <p class="text-gray-500 font-medium">No deactivated partylists</p>
+                                <p class="text-gray-400 text-sm mt-1">Partylists that were deactivated will appear here</p>
+                            </div>
+                        </TabPanel>
+                    </TabView>
                 </div>
             </div>
-            <template #footer>
 
+            <template #footer>
                 <Button 
                     label="Close" 
                     @click="visible = false" 
@@ -272,7 +378,9 @@ import { ref, computed, onMounted } from 'vue'
 import { usePartylistsStore } from '../../../../stores/partylists'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
-import PartylistTable from './PartylistTable.vue';
+import PartylistTable from './PartylistTable.vue'
+import TabView from 'primevue/tabview'
+import TabPanel from 'primevue/tabpanel'
 
 const emit = defineEmits(['partylist-created', 'partylist-approved'])
 const partylistsStore = usePartylistsStore()
@@ -283,6 +391,7 @@ const confirm = useConfirm()
 const visible = ref(false)
 const partylistDialog = ref(false)
 const deletePartylistDialog = ref(false)
+const showOtherPartylists = ref(false)
 
 // Form states
 const loading = ref(false)
@@ -323,10 +432,9 @@ const checkCanCreate = async () => {
 
 const openMyPartylist = async () => {
     visible.value = true
+    showOtherPartylists.value = false // Reset to collapsed state when opening
     await Promise.all([getMyPartylist(), checkCanCreate()])
 }
-
-
 
 const getStatusText = (status) => {
     switch(status) {
@@ -434,10 +542,12 @@ const savePartylist = async () => {
             life: 3000
         })
 
-        // Refresh the partylists
-        await getMyPartylist()
+        // Refresh the partylists and modal state
+        await Promise.all([getMyPartylist(), checkCanCreate()])
+        
+        // Keep the main dialog open for both editing and creating
         partylistDialog.value = false
-        visible.value = false  // Close the main dialog
+        
         emit('partylist-created')
     } catch (error) {
         console.error('Error saving partylist:', error)
@@ -460,7 +570,16 @@ const confirmDeletePartylist = (partylistData) => {
 const deletePartylist = async () => {
     try {
         deleting.value = true
-        const result = await partylistsStore.deletePartylist(partylist.value.id)
+        let result
+        
+        // Use different delete methods based on partylist status
+        if (partylist.value.status === 0) {
+            // For pending partylists, delete them completely
+            result = await partylistsStore.deletePendingPartylist(partylist.value.id)
+        } else {
+            // For approved partylists, just deactivate them
+            result = await partylistsStore.deletePartylist(partylist.value.id)
+        }
         
         if (result.error) throw result.error
 
@@ -471,8 +590,8 @@ const deletePartylist = async () => {
             life: 3000
         })
 
-        // Refresh the partylists
-        await getMyPartylist()
+        // Refresh the partylists and modal state
+        await Promise.all([getMyPartylist(), checkCanCreate()])
         deletePartylistDialog.value = false
         emit('partylist-created')
     } catch (error) {
