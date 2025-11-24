@@ -215,14 +215,14 @@
       :closeOnEscape="!changingPassword"
     >
       <div class="p-fluid">
-        <div v-if="!isGoogleUser" class="field">
+        <div v-if="!isGoogleUser || (isGoogleUser && hasSetPassword)" class="field">
           <label for="currentPassword">Current Password</label>
           <Password 
             id="currentPassword" 
             v-model="passwordForm.currentPassword" 
             :feedback="false" 
             toggleMask 
-            placeholder="Enter your current password"
+            :placeholder="isGoogleUser ? 'Enter your current password' : 'Enter your current password'"
             :disabled="changingPassword"
             :class="{ 'p-invalid': currentPasswordError }"
             class="w-full"
@@ -264,7 +264,12 @@
         </div>
         <div v-if="isGoogleUser" class="text-sm text-gray-500 mt-2">
           <i class="pi pi-info-circle mr-1"></i>
-          You're signed in with Google. You can set a new password to enable email/password login.
+          <span v-if="!hasSetPassword">
+            You're signed in with Google. You can set a new password to enable email/password login.
+          </span>
+          <span v-else>
+            You've already set a password. Please enter your current password to change it.
+          </span>
         </div>
       </div>
       <template #footer>
@@ -319,6 +324,11 @@ const user = useSupabaseUser()
 // Check if user is authenticated with Google
 const isGoogleUser = computed(() => {
   return user.value?.app_metadata?.provider === 'google'
+})
+
+// Check if Google user has already set a password
+const hasSetPassword = computed(() => {
+  return authStore.profile?.password_change !== null
 })
 
 // Password change dialog state
@@ -453,8 +463,10 @@ const changePassword = async () => {
       return
     }
     
-    // For Google users, we don't need the current password
-    const currentPassword = isGoogleUser.value ? undefined : passwordForm.value.currentPassword
+    // For Google users who haven't set a password yet, we don't need the current password
+    const currentPassword = (isGoogleUser.value && !hasSetPassword.value) 
+      ? undefined 
+      : passwordForm.value.currentPassword
     
     // Call the changePassword method from the auth store
     const { error, message } = await authStore.changePassword(

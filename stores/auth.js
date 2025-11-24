@@ -346,6 +346,15 @@ export const useAuthStore = defineStore('auth', () => {
         });
 
         if (updateError) throw updateError;
+        
+        // Update password_change timestamp
+        await supabase
+          .from('user_profile')
+          .update({ 
+            password_change: new Date().toISOString() 
+          })
+          .eq('user_id', user.value.id);
+
         return { error: null, message: 'Password updated successfully' };
       }
       
@@ -368,6 +377,19 @@ export const useAuthStore = defineStore('auth', () => {
       });
 
       if (updateError) throw updateError;
+
+      // Update password_change timestamp
+      const { error: profileError } = await supabase
+        .from('user_profile')
+        .update({ 
+          password_change: new Date().toISOString() 
+        })
+        .eq('user_id', user.value.id);
+
+      if (profileError) {
+        console.error('Error updating password change timestamp:', profileError);
+        // Don't fail the entire operation if timestamp update fails
+      }
 
       return { error: null, message: 'Password updated successfully' };
     } catch (error) {
