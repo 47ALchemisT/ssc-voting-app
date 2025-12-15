@@ -1,5 +1,5 @@
 <template>
-  <div class="">
+  <div class="px-2 sm:px-4 py-2">
 
 
     <!-- Loading State -->
@@ -27,13 +27,13 @@
         { label: 'Elections', icon: 'pi pi-chart-bar' }
       ]" 
     />
-      <div class="flex justify-between mb-3">
-        <div>
-          <h3 class="text-lg font-semibold text-gray-800">Elections List</h3>
-          <p class="text-sm text-gray-500">Browse all active and past elections managed by the student council.</p>
+      <div class="flex flex-col sm:flex-row justify-between gap-3 mb-4 sm:mb-3">
+        <div class="mb-2 sm:mb-0">
+          <h3 class="text-xl sm:text-2xl font-bold text-gray-900">Elections List</h3>
+          <p class="text-sm sm:text-base text-gray-600 mt-1">Browse all active and past elections managed by the student council.</p>
         </div>
         <!-- Create New Election -->
-        <div>
+        <div class="w-full sm:w-auto">
           <Button 
             v-if="authStore.isAdmin && !hasActiveElections"
             label="Create New Election"
@@ -53,10 +53,10 @@
       </div>
 
       <!-- Elections list -->
-      <div class=" mb-6">
+      <div class="mb-6 -mx-2 sm:mx-0">
         <!-- Current Election Section -->
         <div v-if="currentElection" class="space-y-3 py-3">
-          <div class="relative p-6 rounded-xl border-2 border-blue-400 bg-gradient-to-br from-blue-50 via-blue-50 to-indigo-50 ">
+          <div class="relative p-4 sm:p-6 rounded-xl border-2 border-blue-400 bg-gradient-to-br from-blue-50 via-blue-50 to-indigo-50 mx-2 sm:mx-0">
             <!-- Current Election Badge -->
             <div class="absolute -top-3 left-6">
               <span class="px-4 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-full shadow-md flex items-center gap-2">
@@ -67,23 +67,12 @@
             
             <div class="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4 mt-2">
               <div class="flex-1">
-                <div class="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
-                  <span class="font-bold text-2xl text-blue-900">{{ currentElection.title }}</span>
-
+                <div class="flex flex-col gap-2 mb-2">
+                  <h2 class="text-xl sm:text-2xl font-bold text-blue-900 leading-tight">{{ currentElection.title }}</h2>
+                  <p class="text-sm sm:text-base text-blue-800 font-medium">{{ currentElection.description }}</p>
                 </div>
-                <p class="text-base text-blue-800 mt-2 font-medium">{{ currentElection.description }}</p>
                 
-                <div class="flex items-center gap-2 mt-4">
-                  <div class="text-sm flex items-center gap-2 font-semibold text-blue-700 bg-blue-200 px-3 py-2 rounded-lg inline-flex">
-                    <i class="pi pi-calendar text-lg"></i>
-                    <span v-if="currentElection.start_date && currentElection.end_date">
-                      {{ formatDateRange(currentElection.start_date, currentElection.end_date) }}
-                    </span>
-                    <span v-else class="text-amber-700">
-                      <i class="pi pi-exclamation-circle mr-1"></i>
-                      Election dates not yet set
-                    </span>
-                  </div>
+                <div class="flex flex-wrap gap-2 mt-4">
                   <div>
                     <span v-if="currentElection.status === 'upcoming'" class="px-3 py-2 text-sm font-semibold bg-yellow-100 text-yellow-800 rounded-lg border border-yellow-300">
                       <i class="pi pi-clock mr-1"></i>
@@ -101,7 +90,7 @@
                 </div>
 
               </div>
-              <div class="flex gap-2 lg:flex-shrink-0">
+              <div class="flex flex-wrap gap-2 lg:flex-shrink-0 mt-3 sm:mt-0">
                 <NuxtLink :to="`/elections/${currentElection.id}`">
                   <Button label="View Details" icon="pi pi-eye" size="small" />
                 </NuxtLink>
@@ -131,50 +120,56 @@
 
         <!-- Past Elections Section -->
         <div v-if="pastElections.length > 0" class="space-y-3">
-          <div class="flex justify-between items-center">
-            <div>
-              <h4 class="text-sm font-medium text-gray-700">Past Elections</h4>
-              <p class="text-sm text-gray-500">List of previous elections</p>
-            </div>
-            <div class="flex items-center gap-2">
-              <div>
-                <IconField class="w-72">
+          <div class="px-2 sm:px-0">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-3">
+              <div class="w-full sm:w-auto">
+                <h4 class="text-base sm:text-lg font-semibold text-gray-800">Past Elections</h4>
+                <p class="text-sm text-gray-500">List of previous elections</p>
+              </div>
+              <div class="w-full sm:w-72">
+                <IconField>
                   <InputIcon class="pi pi-search" />
-                  <InputText size="small" v-model="searchQuery" placeholder="Search..." class="w-full" />
+                  <InputText size="small" v-model="searchQuery" placeholder="Search past elections..." class="w-full" />
                 </IconField>
               </div>
             </div>
-          </div>
-          <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
-            <DataTable 
-              :value="filteredPastElections" 
-              :paginator="true" 
-              :rows="10"
-              :rowsPerPageOptions="[5, 10, 20]"
-              stripedRows
-              class="p-datatable-sm"
-            >
-              <Column field="title" header="Title" sortable>
-                <template #body="slotProps">
-                  <span class="font-medium text-gray-800">{{ slotProps.data.title }}</span>
+          <div class="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+            <div class="overflow-x-auto">
+              <DataTable 
+                :value="filteredPastElections" 
+                :paginator="true" 
+                :rows="10"
+                :rowsPerPageOptions="[5, 10, 20]"
+                stripedRows
+                class="p-datatable-sm text-sm sm:text-base"
+                :paginatorTemplate="'FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink RowsPerPageDropdown'"
+                currentPageReportTemplate="Showing {first} to {last} of {totalRecords} entries"
+                :paginatorDropdownAppendTo="'self'"
+              >
+              <Column field="title" header="Title" sortable :style="{ minWidth: '150px' }">
+                <template #body="{ data }">
+                  <div class="font-medium text-gray-800">{{ data.title }}</div>
+                  <div class="text-xs sm:hidden text-gray-500 mt-1">
+                    {{ formatDateRange(data.start_date, data.end_date, true) }}
+                  </div>
                 </template>
               </Column>
               
-              <Column field="description" header="Description">
-                <template #body="slotProps">
-                  <span class="text-sm text-gray-600">{{ slotProps.data.description }}</span>
+              <Column field="description" header="Description" class="hidden sm:table-cell">
+                <template #body="{ data }">
+                  <div class="text-sm text-gray-600 line-clamp-2">{{ data.description }}</div>
                 </template>
               </Column>
               
-              <Column field="start_date" header="Election Period" sortable>
-                <template #body="slotProps">
-                  <span class="text-xs text-gray-500">
-                    {{ formatDateRange(slotProps.data.start_date, slotProps.data.end_date) }}
-                  </span>
+              <Column field="start_date" header="Election Period" sortable class="hidden sm:table-cell">
+                <template #body="{ data }">
+                  <div class="text-sm text-gray-600 whitespace-nowrap">
+                    {{ formatDateRange(data.start_date, data.end_date) }}
+                  </div>
                 </template>
               </Column>
               
-              <Column header="Actions" style="width: 200px">
+              <Column header="Actions" :style="{ width: '120px', minWidth: '120px' }">
                 <template #body="slotProps">
                   <div class="flex gap-2">
                     <NuxtLink :to="`/elections/${slotProps.data.id}`">
@@ -192,10 +187,12 @@
               </Column>
 
               <template #empty>
-                <div class="flex flex-col items-center justify-center py-12">
-                  <i class="pi pi-inbox text-6xl text-gray-300 mb-4"></i>
-                  <h3 class="text-lg font-medium text-gray-700 mb-2">No Past Elections Found</h3>
-                  <p class="text-sm text-gray-500">There are no past elections to display at the moment.</p>
+                <div class="flex flex-col items-center justify-center py-8 sm:py-12 px-4 text-center">
+                  <i class="pi pi-inbox text-5xl sm:text-6xl text-gray-300 mb-3 sm:mb-4"></i>
+                  <h3 class="text-base sm:text-lg font-medium text-gray-700 mb-1 sm:mb-2">No Past Elections Found</h3>
+                  <p class="text-sm text-gray-500 max-w-md mx-auto">
+                    {{ searchQuery ? 'No elections match your search.' : 'There are no past elections to display at the moment.' }}
+                  </p>
                 </div>
               </template>
             </DataTable>
@@ -203,6 +200,8 @@
         </div>
       </div>
     </div>
+  </div>
+</div>
 
     <!-- Success Toast -->
     <Toast />
@@ -378,33 +377,45 @@ const handleElectionDeleted = () => {
 }
 
 // Helper function to format date ranges with times
-const formatDateRange = (startDate, endDate) => {
+const formatDateRange = (startDate, endDate, short = false) => {
   if (!startDate || !endDate) return 'Dates not set'
   
-  const formatDateTime = (dateString) => {
+  const formatDate = (dateString, includeTime = true) => {
     const date = new Date(dateString)
-    return date.toLocaleString('en-US', {
+    const options = {
       month: 'short',
       day: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
+      ...(includeTime && {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      })
+    }
+    
+    if (!includeTime || window.innerWidth >= 640) { // sm breakpoint
+      options.year = 'numeric'
+    }
+    
+    return date.toLocaleString('en-US', options)
   }
   
-  const start = formatDateTime(startDate)
-  const end = formatDateTime(endDate)
+  const start = formatDate(startDate, !short)
+  const end = formatDate(endDate, !short)
+  
+  if (short) {
+    return `${start} - ${end}`
+  }
   
   const now = new Date()
   const startDateTime = new Date(startDate)
   const endDateTime = new Date(endDate)
   
   if (now < startDateTime) {
-    return `Starts: ${start} - Ends: ${end}`
+    return `Starts ${start}`
   } else if (now > endDateTime) {
-    return `Ended: ${end}`
+    return `Ended ${end}`
   } else {
-    return `Ends: ${end}`
+    return `Ends ${end}`
   }
 }
 </script>

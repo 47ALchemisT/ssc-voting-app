@@ -1,9 +1,9 @@
 <template>
   <div>
     <AppBreadCrumbs :home="home" :items="items" />
-    <div class="flex justify-between items-center mb-6">
+    <div class="flex flex-col sm:flex-row justify-between gap-3 sm:items-center mb-4 sm:mb-6">
       <div>
-        <h1 class="text-xl font-semibold text-gray-800">My Candidacy</h1>
+        <h1 class="text-lg sm:text-xl font-semibold text-gray-800">My Candidacy</h1>
         <p class="text-gray-500 text-sm">View and manage your candidacy applications</p>
       </div>
       <Button
@@ -31,12 +31,12 @@
     </div>
 
     <div v-else>
-      <div v-if="applications.length === 0" class="bg-white rounded-lg border border-gray-200 p-8 text-center">
-        <div class="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+      <div v-if="applications.length === 0" class="bg-white rounded-lg border border-gray-200 p-4 sm:p-8 text-center">
+        <div class="mx-auto w-12 h-12 sm:w-16 sm:h-16 bg-gray-100 rounded-full flex items-center justify-center mb-3 sm:mb-4">
           <i class="pi pi-user text-gray-400 text-2xl"></i>
         </div>
-        <h3 class="text-lg font-medium text-gray-900 mb-1">No applications yet</h3>
-        <p class="text-gray-500 mb-6">You haven't submitted any candidacy applications yet.</p>
+        <h3 class="text-base sm:text-lg font-medium text-gray-900 mb-1">No applications yet</h3>
+        <p class="text-sm sm:text-base text-gray-500 mb-4 sm:mb-6">You haven't submitted any candidacy applications yet.</p>
         <Button
           v-if="hasUpcomingElection"
           label="Apply for Candidacy"
@@ -55,9 +55,9 @@
           :key="app.id" 
           class="bg-gray-50/50 rounded-lg border border-gray-200 overflow-hidden"
         >
-          <div class="p-6">
-            <div class="flex justify-between items-start">
-              <div>
+          <div class="p-4 sm:p-6">
+            <div class="flex flex-col sm:flex-row justify-between gap-2 sm:items-start">
+              <div class="flex-1">
                 <h3 class="text-lg font-medium text-gray-900">{{ app.position?.title || 'Unknown Position' }}</h3>
                 <p class="text-sm text-gray-500 mt-1">
                   {{ app.election?.title || 'Unknown Election' }}
@@ -67,7 +67,7 @@
                 </p>
               </div>
               <span 
-                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mt-1 sm:mt-0 self-start sm:self-auto"
                 :class="getStatusInfo(app.status).class"
               >
                 {{ getStatusInfo(app.status).text }}
@@ -80,7 +80,7 @@
             </div>
 
             <div class="flex items-center mt-4">
-              <div class="flex-shrink-0 h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+              <div class="flex-shrink-0 h-9 w-9 sm:h-10 sm:w-10 rounded-full bg-gray-200 flex items-center justify-center">
                 <Avatar
                   v-if="app.user?.avatar_url"
                   :image="app.user.avatar_url"
@@ -94,32 +94,35 @@
                   shape="circle"
                 />
               </div>
-              <div class="ml-3">
-                <p class="text-sm font-medium text-gray-900">
+              <div class="ml-3 overflow-hidden">
+                <p class="text-sm font-medium text-gray-900 truncate">
                   {{ app.user?.first_name }} {{ app.user?.last_name }}
                 </p>
-                <p class="text-sm text-gray-500">
+                <p class="text-xs sm:text-sm text-gray-500 truncate">
                   {{ app.user?.school_number || 'No ID provided' }}
                 </p>
               </div>
             </div>
 
-            <div class="mt-4 pt-4 border-t border-gray-100 flex justify-between items-center">
-              <div class="text-sm text-gray-500">
+            <div class="mt-4 pt-4 border-t border-gray-100 flex flex-col sm:flex-row justify-between gap-3 sm:items-center">
+              <div class="text-xs sm:text-sm text-gray-500">
                 Applied on {{ formatDate(app.created_at) }}
               </div>
-              <div class="flex items-center gap-2">
+              <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
                 <Button 
                   icon="pi pi-trash"
                   label="Cancel Application" 
                   size="small" 
-                  variant="outlined"
+                  severity="danger"
+                  outlined
+                  class="w-full sm:w-auto"
                   @click="openCancelDialog(app.id)"
                 />
                 <Button 
                   icon="pi pi-eye"
                   label="View Details" 
                   size="small" 
+                  class="w-full sm:w-auto"
                   @click="viewApplication(app.id)"
                 />
 
@@ -131,16 +134,16 @@
     </div>
     
     <!-- Cancel Confirmation Modal (PrimeVue Dialog) -->
-    <Dialog v-model:visible="showCancelDialog" modal header="Cancel Application" :style="{ width: '28rem' }">
+    <Dialog v-model:visible="showCancelDialog" modal header="Cancel Application" :style="{ width: '95vw', maxWidth: '28rem' }">
       <div class="flex items-start">
         <i class="pi pi-exclamation-triangle text-orange-500 text-2xl mr-3"></i>
         <div>
           <p class="text-sm text-gray-700">Are you sure you want to delete this application? This action cannot be undone.</p>
         </div>
       </div>
-      <div class="mt-6 flex justify-end gap-2">
-        <Button type="button" label="No, Keep" severity="secondary" size="small" @click="showCancelDialog = false" />
-        <Button type="button" label="Yes, Delete" size="small" @click="handleCancelConfirmed" />
+      <div class="mt-6 flex flex-col sm:flex-row justify-end gap-2">
+        <Button type="button" label="No, Keep" severity="secondary" size="small" class="w-full sm:w-auto" @click="showCancelDialog = false" />
+        <Button type="button" label="Yes, Delete" size="small" class="w-full sm:w-auto" @click="handleCancelConfirmed" />
       </div>
     </Dialog>
   </div>

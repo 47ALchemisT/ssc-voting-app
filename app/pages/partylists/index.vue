@@ -1,9 +1,9 @@
 <template>
-    <div class="p-4">
+    <div>
         <AppBreadCrumbs :home="home" :items="items" />
-        <div class="flex justify-between items-center mb-6">
+        <div class="flex flex-col sm:flex-row justify-between gap-3 sm:items-center mb-4 sm:mb-6">
             <div>
-                <h1 class="text-xl font-semibold text-gray-800">
+                <h1 class="text-lg sm:text-xl font-semibold text-gray-800">
                     {{ authStore.isAdmin ? 'Partylists Management' : 'Partylists' }}
                 </h1>
                 <p class="text-gray-500 text-sm">
@@ -18,12 +18,13 @@
         </div>
 
         <!-- DataTable -->
-        <div class="p-1 rounded-lg border border-gray-200">
+        <div class="rounded-lg border border-gray-200 overflow-x-auto">
             <DataTable 
                 :value="partylists" 
                 :loading="loading" 
                 stripedRows
-                responsiveLayout="scroll"
+                :scrollable="true"
+                scrollHeight="flex"
                 class="p-datatable-sm"
             >
                 <template #empty>
@@ -35,27 +36,35 @@
                     <p class="text-gray-500 mb-6">You haven't submitted any candidacy applications yet.</p>
                 </div>
                 </template>
-                <Column field="name" header="Name" sortable></Column>
-                <Column field="description" header="Description">
+                <Column field="name" header="Name" sortable :style="{ minWidth: '150px' }">
                     <template #body="{ data }">
-                        {{ data.description || '-' }}
+                        <div class="font-medium">{{ data.name }}</div>
+                        <div class="text-xs text-gray-500 sm:hidden">
+                            {{ data.description ? data.description.substring(0, 30) + (data.description.length > 30 ? '...' : '') : '-' }}
+                        </div>
                     </template>
                 </Column>
-                <Column field="platform" header="Platform">
+                <Column field="description" header="Description" class="hidden sm:table-cell">
                     <template #body="{ data }">
-                        {{ data.platform || '-' }}
+                        <div class="text-sm text-gray-600 line-clamp-2">{{ data.description || '-' }}</div>
                     </template>
                 </Column>
-                <Column field="date_founded" header="Date Founded" sortable>
+                <Column field="platform" header="Platform" class="hidden sm:table-cell">
                     <template #body="{ data }">
-                        {{ formatDate(data.date_founded) }}
+                        <div class="text-sm text-gray-600 line-clamp-2">{{ data.platform || '-' }}</div>
+                    </template>
+                </Column>
+                <Column field="date_founded" header="Date" class="hidden xs:table-cell" sortable :style="{ minWidth: '100px' }">
+                    <template #body="{ data }">
+                        <div class="text-sm">{{ formatDate(data.date_founded) }}</div>
                     </template>
                 </Column>
                 <Column 
                     v-if="authStore.isAdmin"
                     header="Actions" 
                     :exportable="false" 
-                    style="min-width: 8rem"
+                    :style="{ minWidth: '100px' }"
+                    class="sticky right-0 bg-white"
                 >
                     <template #body="slotProps">
                         <div class="flex gap-2">
@@ -82,7 +91,8 @@
         <!-- Add/Edit Dialog -->
         <Dialog 
             v-model:visible="partylistDialog" 
-            :style="{width: '550px'}" 
+            :style="{width: '95vw', maxWidth: '550px'}" 
+            :breakpoints="{ '960px': '75vw', '641px': '90vw', '360px': '95vw' }"
             :header="dialogTitle" 
             :modal="true" 
             class="p-fluid space-y-3"
@@ -153,7 +163,8 @@
         <!-- Delete Confirmation -->
         <Dialog 
             v-model:visible="deletePartylistDialog" 
-            :style="{width: '450px'}" 
+            :style="{width: '95vw', maxWidth: '450px'}" 
+            :breakpoints="{ '960px': '75vw', '641px': '90vw', '360px': '95vw' }"
             header="Confirm" 
             :modal="true"
         >

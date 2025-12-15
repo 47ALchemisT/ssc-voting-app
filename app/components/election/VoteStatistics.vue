@@ -1,5 +1,5 @@
 <template>
-    <div class="card">
+    <div >
       <!-- Loading State -->
       <div v-if="loading" class="text-center py-12">
         <i class="pi pi-spin pi-spinner text-3xl text-blue-500"></i>
@@ -34,13 +34,13 @@
         <template #item="slotProps">
           <div >
             <!-- Position Header -->
-            <div class="text-center mb-6">
-              <h3 class="font-bold text-lg text-gray-800">{{ slotProps.data.title }}</h3>
-              <p class="text-sm text-gray-500">{{ slotProps.data.candidates.length }} candidate{{ slotProps.data.candidates.length !== 1 ? 's' : '' }}</p>
+            <div class="text-center mb-3 sm:mb-4">
+              <h3 class="font-bold text-base sm:text-lg text-gray-800">{{ slotProps.data.title }}</h3>
+              <p class="text-xs sm:text-sm text-gray-500">{{ slotProps.data.candidates.length }} candidate{{ slotProps.data.candidates.length !== 1 ? 's' : '' }}</p>
             </div>
             
             <!-- Chart Container -->
-            <div class="relative h-72 md:h-80">
+            <div class="relative h-48 sm:h-64 md:h-72">
               <Chart 
                 type="bar" 
                 :data="getChartData(slotProps.data)" 
@@ -143,49 +143,70 @@
     };
   };
   
-  const getChartOptions = () => {
-    return {
-      maintainAspectRatio: false,
-      responsive: true,
-      plugins: {
-        legend: {
-          display: false
-        },
-        tooltip: {
-          callbacks: {
-            label: function(context) {
-              return `Votes: ${context.raw}`;
-            }
+const getChartOptions = () => {
+  const isMobile = window.innerWidth < 640; // sm breakpoint
+  
+  return {
+    maintainAspectRatio: false,
+    responsive: true,
+    plugins: {
+      legend: {
+        display: false
+      },
+      tooltip: {
+        callbacks: {
+          label: function(context) {
+            return `Votes: ${context.raw}`;
           }
+        },
+        titleFont: {
+          size: isMobile ? 12 : 14
+        },
+        bodyFont: {
+          size: isMobile ? 11 : 13
+        },
+        padding: isMobile ? 8 : 12
+      }
+    },
+    scales: {
+      x: {
+        ticks: {
+          color: '#6B7280',
+          font: {
+            size: isMobile ? 10 : 12
+          },
+          maxRotation: isMobile ? 45 : 0,
+          autoSkip: true,
+          maxTicksLimit: isMobile ? 5 : 10
+        },
+        grid: {
+          display: false,
+          drawBorder: false
         }
       },
-      scales: {
-        x: {
-          ticks: {
-            color: '#6B7280',
-            font: {
-              size: 12
-            }
+      y: {
+        beginAtZero: true,
+        ticks: {
+          color: '#6B7280',
+          precision: 0,
+          font: {
+            size: isMobile ? 10 : 12
           },
-          grid: {
-            display: false,
-            drawBorder: false
-          }
+          maxTicksLimit: isMobile ? 5 : 10
         },
-        y: {
-          beginAtZero: true,
-          ticks: {
-            color: '#6B7280',
-            precision: 0
-          },
-          grid: {
-            color: '#E5E7EB',
-            drawBorder: false
-          }
+        grid: {
+          color: '#E5E7EB',
+          drawBorder: false
         }
       }
-    };
-  };
+    },
+    layout: {
+      padding: isMobile ? 5 : 10
+    },
+    barPercentage: isMobile ? 0.5 : 0.6,
+    categoryPercentage: isMobile ? 0.7 : 0.8
+  }; // This closing brace was missing
+};
   
   // Position name is now included in the data from the store
   

@@ -1,9 +1,10 @@
 <template>
-    <div class="flex gap-2">
+    <div class="w-full">
         <Button 
             label="My Partylists" 
             size="small"
             icon="pi pi-flag"
+            class="w-full sm:w-auto"
             @click="openMyPartylist" 
         />
 

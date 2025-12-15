@@ -111,8 +111,8 @@
             </div>
           </div>
         </InfoCard>
-        <InfoCard class="col-span-1 lg:col-span-2">
-          <template #header>
+        <div class="col-span-1 lg:col-span-2">
+          <div>
             <div class="flex justify-between items-center">
               <h3 class="font-medium text-gray-800">Vote Statistics</h3>
               <Button
@@ -125,7 +125,7 @@
                 @click="refreshStatistics"
               />
             </div>
-          </template>
+          </div>
           
           <!-- Alert for non-admin users during ongoing election -->
           <div v-if="!authStore.isAdmin && !electionStore.isElectionEnded(election)" class="p-6">
@@ -151,7 +151,7 @@
           
           <!-- Show statistics for admin or ended election -->
           <VoteStatistics v-else :election-id="electionId" />
-        </InfoCard>
+        </div>
       </div>
 
       <!-- Import Voters Dialog -->
