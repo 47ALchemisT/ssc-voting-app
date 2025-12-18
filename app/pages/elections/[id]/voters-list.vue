@@ -27,7 +27,15 @@
                 />
                 <Button 
                     v-if="authStore.isAdmin"
-                    label="Import Voters List"
+                    label="Add Voter"
+                    icon="pi pi-plus"
+                    @click="openCreateDialog"
+                    size="small"
+                    class="p-button-success"
+                />
+                <Button 
+                    v-if="authStore.isAdmin"
+                    label="Import Voters"
                     icon="pi pi-upload"
                     @click="showImportDialog = true"
                     size="small"
@@ -126,7 +134,15 @@
       </div>
       <div>
         <label class="text-sm text-gray-600">College</label>
-        <InputText v-model="editForm.college" class="w-full" />
+        <Select 
+          v-model="editForm.college" 
+          :options="colleges" 
+          optionLabel="college_name" 
+          optionValue="alias" 
+          placeholder="Select a college" 
+          class="w-full"
+          :loading="!colleges.length"
+        />
       </div>
       <div>
         <label class="text-sm text-gray-600">School ID</label>
@@ -148,6 +164,40 @@
       <Button label="Confirm" icon="pi pi-check" severity="danger" @click="onConfirm" :loading="confirming" />
     </template>
   </Dialog>
+
+  <!-- Create Voter Dialog -->
+  <Dialog v-model:visible="showCreateDialog" modal header="Add New Voter" :style="{ width: '30rem' }">
+    <div class="flex flex-col gap-3">
+      <div>
+        <label class="text-sm text-gray-600">Full name <span class="text-red-500">*</span></label>
+        <InputText v-model="createForm.fullname" class="w-full" required />
+      </div>
+      <div>
+        <label class="text-sm text-gray-600">Email <span class="text-red-500">*</span></label>
+        <InputText v-model="createForm.email" type="email" class="w-full" required />
+      </div>
+      <div>
+        <label class="text-sm text-gray-600">College</label>
+        <Select 
+          v-model="createForm.college" 
+          :options="colleges" 
+          optionLabel="college_name" 
+          optionValue="alias" 
+          placeholder="Select a college" 
+          class="w-full"
+          :loading="!colleges.length"
+        />
+      </div>
+      <div>
+        <label class="text-sm text-gray-600">School ID</label>
+        <InputText v-model="createForm.school_id" class="w-full" />
+      </div>
+    </div>
+    <template #footer>
+      <Button label="Cancel" class="p-button-text" @click="showCreateDialog = false" :disabled="creating" />
+      <Button label="Create" icon="pi pi-plus" @click="createVoter" :loading="creating" />
+    </template>
+  </Dialog>
   </div>
 </template>
 
@@ -156,6 +206,7 @@ import { ref, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '../../../../stores/auth';
 import { useVotersListStore } from '../../../../stores/votersList';
+import { useColleges } from '../../../../stores/colleges';
 import ImportVotersDialog from '~/components/election/ImportVotersDialog.vue';
 import AppBreadCrumbs from '~/components/AppBreadCrumbs.vue';
 
@@ -165,12 +216,14 @@ definePageMeta({
 })
 
 const authStore = useAuthStore();
+const collegesStore =  useColleges();
 const route = useRoute();
 const router = useRouter();
 const votersListStore = useVotersListStore();
 
 const electionId = route.params.id;
 const voters = ref([]);
+const colleges = ref([]);
 const loading = ref(false);
 const showImportDialog = ref(false);
 const searchTerm = ref('');
@@ -184,6 +237,16 @@ const confirming = ref(false);
 const confirmTitle = ref('Confirm Delete');
 const confirmMessage = ref('Are you sure? This action cannot be undone.');
 let confirmAction = async () => {};
+
+// Create Voter Dialog
+const showCreateDialog = ref(false);
+const createForm = ref({
+  email: '',
+  fullname: '',
+  college: '',
+  school_id: ''
+});
+const creating = ref(false);
 
 const home = ref({
   label: 'Dashboard',
@@ -211,6 +274,8 @@ const filteredVoters = computed(() => {
   });
 });
 
+
+
 const fetchVoters = async () => {
   try {
     loading.value = true;
@@ -227,12 +292,22 @@ const fetchVoters = async () => {
   }
 };
 
+const fetchColleges = async () => {
+  try{
+    const { data, error } = await collegesStore.getColleges();
+    colleges.value = data || [];
+  }catch (error){
+    console.error('Error fetching voters:', error);
+  }
+}
+
 const navigateBack = () => {
   router.push(`/elections/${electionId}`);
 };
 
 onMounted(() => {
   fetchVoters();
+  fetchColleges();
 });
 
 const openEdit = (row) => {
@@ -259,6 +334,40 @@ const saveEdit = async () => {
     saving.value = false;
   }
 };
+
+const openCreateDialog = () => {
+  createForm.value = {
+    email: '',
+    fullname: '',
+    college: '',
+    school_id: ''
+  };
+  showCreateDialog.value = true;
+};
+
+const createVoter = async () => {
+  if (!createForm.value.email || !createForm.value.fullname) {
+    return;
+  }
+
+  try {
+    creating.value = true;
+    const { data, error } = await votersListStore.createVoter(electionId, createForm.value);
+    
+    if (error) throw error;
+    
+    await fetchVoters();
+    showCreateDialog.value = false;
+  } catch (err) {
+    console.error('Error creating voter:', err);
+  } finally {
+    creating.value = false;
+  }
+};
+
+defineExpose({
+  openCreateDialog
+});
 
 const confirmDeleteOne = async (row) => {
   openConfirm({

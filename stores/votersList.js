@@ -177,11 +177,63 @@ export const useVotersListStore = defineStore('votersList', () => {
     }
   };
 
+  // Create a single voter
+  const createVoter = async (electionId, voterData) => {
+    try {
+      loading.value = true;
+      error.value = null;
+
+      // Check if email already exists for this election
+      const { data: existingVoter, error: checkError } = await supabase
+        .from('voters_list')
+        .select('id')
+        .eq('election_id', electionId)
+        .eq('reg_email', voterData.email.trim().toLowerCase())
+        .maybeSingle();
+
+      if (checkError) throw checkError;
+      if (existingVoter) {
+        throw new Error('A voter with this email already exists in this election');
+      }
+
+      const newVoter = {
+        election_id: electionId,
+        reg_email: voterData.email?.trim().toLowerCase() || '',
+        fullname: voterData.fullname?.trim() || null,
+        college: voterData.college?.trim() || null,
+        school_id: voterData.school_id?.trim() || null,
+        created_at: new Date().toISOString()
+      };
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(newVoter.reg_email)) {
+        throw new Error('Invalid email format');
+      }
+
+      const { data, error: insertError } = await supabase
+        .from('voters_list')
+        .insert(newVoter)
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+      return { data, error: null };
+    } catch (err) {
+      console.error('Error creating voter:', err);
+      error.value = err.message || 'Failed to create voter';
+      return { data: null, error: error.value };
+    } finally {
+      loading.value = false;
+    }
+  };
+
   return {
     loading,
     error,
     importVoters,
     getVotersByElection,
+    createVoter,
     updateVoter,
     deleteVotersByIds,
     deleteAllVoters,

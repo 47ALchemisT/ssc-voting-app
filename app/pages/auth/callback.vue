@@ -46,12 +46,7 @@ onMounted(async () => {
     
     if (sessionError) throw sessionError
 
-    if (session?.user?.email) {
-      if (!session.user.email.endsWith('@msunaawan.edu.ph')) {
-        await supabase.auth.signOut()
-        error.value = 'Only @msunaawan.edu.ph email addresses are allowed.'
-        return
-      }
+    if (session?.user) {
       router.push('/dashboard')
     } else {
       router.push('/auth/login')

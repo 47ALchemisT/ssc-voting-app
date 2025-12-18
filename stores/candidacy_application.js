@@ -379,6 +379,117 @@ export const useCandidacyApplicationStore = defineStore('candidacyApplications',
     }
   }
 
+  // Check if a position is full for a specific partylist
+  const checkPositionAvailability = async (electionId, positionId, partylistId) => {
+    clearError()
+    
+    try {
+      // If no partylist (independent), position is always available
+      if (!partylistId) {
+        return { data: { available: true, count: 0, max: null }, error: null }
+      }
+
+      // Get the position details including max_candidate
+      const { data: position, error: posError } = await supabase
+        .from('positions')
+        .select('max_candidate')
+        .eq('id', positionId)
+        .single()
+
+      if (posError) throw posError
+      if (!position) throw new Error('Position not found')
+
+      // Count existing approved/pending applications for this position and partylist
+      const { data: applications, error: appError } = await supabase
+        .from('candidacy_application')
+        .select('id')
+        .eq('election_id', electionId)
+        .eq('position_id', positionId)
+        .eq('partylists_id', partylistId)
+        .in('status', [0, 1]) // 0 = pending, 1 = approved
+
+      if (appError) throw appError
+
+      const currentCount = applications?.length || 0
+      const maxCandidates = position.max_candidate || 1
+      const available = currentCount < maxCandidates
+
+      return { 
+        data: { 
+          available, 
+          count: currentCount, 
+          max: maxCandidates 
+        }, 
+        error: null 
+      }
+    } catch (err) {
+      error.value = err.message
+      console.error('Error checking position availability:', err)
+      return { data: null, error: err.message }
+    }
+  }
+
+  // Get all positions with availability status for a partylist
+  const getPositionsWithAvailability = async (electionId, partylistId) => {
+    clearError()
+    
+    try {
+      // Get all positions
+      const { data: positions, error: posError } = await supabase
+        .from('positions')
+        .select('*')
+        .order('order', { ascending: true })
+
+      if (posError) throw posError
+
+      // If no partylist, all positions are available
+      if (!partylistId) {
+        return { 
+          data: positions.map(pos => ({ 
+            ...pos, 
+            available: true, 
+            currentCount: 0 
+          })), 
+          error: null 
+        }
+      }
+
+      // Get all applications for this partylist in this election
+      const { data: applications, error: appError } = await supabase
+        .from('candidacy_application')
+        .select('position_id')
+        .eq('election_id', electionId)
+        .eq('partylists_id', partylistId)
+        .in('status', [0, 1]) // 0 = pending, 1 = approved
+
+      if (appError) throw appError
+
+      // Count applications per position
+      const positionCounts = {}
+      applications?.forEach(app => {
+        positionCounts[app.position_id] = (positionCounts[app.position_id] || 0) + 1
+      })
+
+      // Add availability info to each position
+      const positionsWithAvailability = positions.map(pos => {
+        const currentCount = positionCounts[pos.id] || 0
+        const maxCandidates = pos.max_candidate || 1
+        return {
+          ...pos,
+          available: currentCount < maxCandidates,
+          currentCount,
+          maxCandidates
+        }
+      })
+
+      return { data: positionsWithAvailability, error: null }
+    } catch (err) {
+      error.value = err.message
+      console.error('Error getting positions with availability:', err)
+      return { data: null, error: err.message }
+    }
+  }
+
   return {
     // State
     applications,
@@ -457,6 +568,8 @@ export const useCandidacyApplicationStore = defineStore('candidacyApplications',
     },
     getUserApplications,
     hasUserApplied,
+    checkPositionAvailability,
+    getPositionsWithAvailability,
     clearError
   }
 })

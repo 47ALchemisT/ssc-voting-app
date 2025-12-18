@@ -96,7 +96,8 @@ import Column from 'primevue/column';
 import 'html2canvas'; // Ensure html2canvas is available
 import MSULogo from '../../assets/images/Background.png';
 import SSCLogo from '../../assets/images/SSC_Logo.jpg';
-
+import Header from '../../assets/images/Header.PNG';
+import Footer from '../../assets/images/Footer.PNG';
 
 // Import html2pdf dynamically
 let html2pdf;
@@ -193,27 +194,23 @@ const exportToPdf = async () => {
     msuLogo.src = MSULogo;
     const sscLogo = new Image();
     sscLogo.src = SSCLogo;
+    const header = new Image();
+    header.src = Header;
+    const footer = new Image();
+    footer.src = Footer;
     
     // Generate HTML for the PDF with logos and centered text
     let htmlContent = [
-      '<div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">',
-      '  <div style="display: flex; justify-content: center; gap: 20px; margin-bottom: 30px;">',
-      '    <div style="width: 80px; height: 80px; display: flex; align-items: center;">',
-      '      <img src="' + msuLogo.src + '" style="max-width: 100%; max-height: 65px; object-fit: contain;" alt="MSU Logo">',
-      '    </div>',
-      '    <div style="text-align: center;">',
-      '      <div style="font-size: 18px; font-weight: 600; color: #3c3c3c;">Mindanao State University at Naawan</div>',
-      '      <div style="font-size: 18px; font-weight: 600; color: #3c3c3c; margin-bottom: 5px;">Supreme Student Council</div>',
-      '      <div style="font-size: 20px; font-weight: 700; margin: 10px 0; color: #3c3c3c;">Election Result</div>',
-      '      <div style="color: #888; font-size: 12px;">Generated on ' + formattedDate.value + '</div>',
-      '    </div>',
-      '    <div style="width: 80px; height: 80px; display: flex; align-items: center; justify-content: flex-end;">',
-      '      <img src="' + sscLogo.src + '" style="max-width: 100%; max-height: 80px; object-fit: contain;" alt="SSC Logo">',
-      '    </div>',
+      '<div style="font-family: Arial, sans-serif; position: relative;">',
+      // Document Title
+      '  <div style="position: relative; text-align: center; margin-bottom: 25px; margin-top: 30px;">',
+      '    <div style="display: flex; justify-content: flex-end; font-size: 12px; color: #666; margin-bottom: 8px;">MSUN-CESS-COMM-165-2025-REV00</div>',
+      '    <div style="font-size: 18px; font-weight: 700; color: #000; text-transform: uppercase; margin-bottom: 8px;">ELECTION RESULTS</div>',
+      '    <div style="font-size: 12px; color: #666;">Generated on ' + formattedDate.value + '</div>',
       '  </div>',
     ].join('');
 
-// Add each position's results as a table
+    // Add each position's results as a table
     if (Array.isArray(props.positions)) {
       props.positions.forEach((position) => {
         if (!position) return;
@@ -261,7 +258,7 @@ const exportToPdf = async () => {
 
     // Add signature section
     htmlContent += [
-      '  <div style="margin-top: 50px; padding-top: 20px;">',
+      '  <div style="margin-top: 50px; padding-top: 30px;">',
       '    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 30px;">',
       '      <div style="margin-bottom: 20px;">',
       '        <div style="width: 200px; border-top: 1px solid #000; margin-bottom: 5px;"></div>',
@@ -346,9 +343,9 @@ const exportToPdf = async () => {
     // Set the HTML content
     tempDiv.innerHTML = htmlContent;
     
-    // Generate PDF
+    // Generate PDF with header and footer on every page
     const options = {
-      margin: [15, 15],
+      margin: [40, 10, 30, 10], // top, left, bottom, right - increased top and bottom margins for header and footer
       filename: `${props.electionName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_results_${new Date().toISOString().split('T')[0]}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { 
@@ -361,11 +358,64 @@ const exportToPdf = async () => {
         unit: 'mm',
         format: 'a4',
         orientation: 'portrait'
-      }
+      },
+      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
     };
     
-    // Generate and download the PDF
-    await html2pdf().set(options).from(tempDiv).save();
+    // Generate PDF with custom header and footer
+    const worker = html2pdf().set(options).from(tempDiv);
+    
+    // Get the PDF object to add header and footer on each page
+    const pdf = await worker.toPdf().get('pdf');
+    const totalPages = pdf.internal.getNumberOfPages();
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    
+    // Load header and footer images
+    const headerImg = new Image();
+    headerImg.src = header.src;
+    const footerImg = new Image();
+    footerImg.src = footer.src;
+    
+    // Wait for images to load
+    await Promise.all([
+      new Promise((resolve) => { headerImg.onload = resolve; }),
+      new Promise((resolve) => { footerImg.onload = resolve; })
+    ]);
+    
+    // Add header and footer to each page
+    for (let i = 1; i <= totalPages; i++) {
+      pdf.setPage(i);
+      
+      // Add header at the top
+      const headerHeight = 40; // Adjust based on your header image height
+      pdf.addImage(
+        headerImg.src, 
+        'PNG', 
+        0, 
+        6, 
+        pageWidth, 
+        headerHeight,
+        undefined,
+        'FAST'
+      );
+      
+      // Add footer at the bottom
+      const footerHeight = 20; // Adjust based on your footer image height
+      pdf.addImage(
+        footerImg.src, 
+        'PNG', 
+        0, 
+        pageHeight - footerHeight, 
+        pageWidth, 
+        footerHeight,
+        undefined,
+        'FAST'
+      );
+    }
+    
+    // Save the PDF
+    pdf.save(`${props.electionName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_results_${new Date().toISOString().split('T')[0]}.pdf`);
     
   } catch (error) {
     console.error('Error generating PDF:', error);

@@ -78,23 +78,41 @@
               <label class="block text-sm font-medium text-gray-700 mb-1">Position</label>
               <Dropdown
                 v-model="form.positionId"
-                :options="positionStore.positions || []"
+                :options="positionsWithAvailability"
                 option-label="title"
                 option-value="id"
                 placeholder="Select a position"
                 class="w-full"
                 :class="{ 'p-invalid': errors.positionId }"
-                :loading="positionStore.loading"
-                :disabled="positionStore.loading"
-              />
+                :loading="loadingPositions"
+                :disabled="loadingPositions || !form.electionId"
+              >
+                <template #option="slotProps">
+                  <div class="flex items-center justify-between w-full">
+                    <span :class="{ 'text-gray-400': !slotProps.option.available }">{{ slotProps.option.title }}</span>
+                    <span v-if="form.partylistId" class="text-xs ml-2" :class="slotProps.option.available ? 'text-green-600' : 'text-red-600'">
+                      {{ slotProps.option.available ? `(${slotProps.option.currentCount}/${slotProps.option.maxCandidates} filled)` : '(Full)' }}
+                    </span>
+                  </div>
+                </template>
+                <template #value="slotProps">
+                  <span v-if="slotProps.value">
+                    {{ positionsWithAvailability.find(p => p.id === slotProps.value)?.title }}
+                  </span>
+                  <span v-else class="text-gray-400">Select a position</span>
+                </template>
+              </Dropdown>
               <small v-if="errors.positionId" class="p-error text-red-500">{{ errors.positionId }}</small>
+              <small v-if="form.partylistId && positionsWithAvailability.length > 0" class="text-gray-500 text-xs block mt-1">
+                Showing {{ availablePositions.length }} of {{ positionsWithAvailability.length }} available positions for your partylist
+              </small>
             </div>
 
             <!-- Partylist Selection -->
             <div>
               <div class="flex items-center gap-2 mb-1">
                 <label class="text-sm font-medium text-gray-700">Partylist</label>
-                <span class="text-xs text-gray-500">(Required for some positions)</span>
+                <span class="text-xs text-gray-500">(Optional - leave empty for independent)</span>
               </div>
               <Dropdown
                 v-model="form.partylistId"
@@ -109,6 +127,9 @@
                 :disabled="partylistStore.loading"
               />
               <small v-if="errors.partylistId" class="p-error text-red-500">{{ errors.partylistId }}</small>
+              <small v-if="form.partylistId" class="text-blue-600 text-xs block mt-1">
+                <i class="pi pi-info-circle"></i> Position availability will be filtered based on your partylist selection
+              </small>
             </div>
 
             <!-- Platform -->
@@ -415,6 +436,8 @@ const submitting = ref(false)
 const error = ref(null)
 const showSuccessModal = ref(false)
 const electionId = computed(() => route.query.election_id || null)
+const positionsWithAvailability = ref([])
+const loadingPositions = ref(false)
 
 // Fetch active elections
 const fetchElections = async () => {
@@ -439,17 +462,38 @@ const fetchElections = async () => {
   }
 }
 
-// Load positions for the selected election
+// Load positions for the selected election with availability info
 const loadPositions = async () => {
   try {
-    const { data, error: posError } = await positionStore.getPositions()
+    loadingPositions.value = true
+    
+    if (!form.value.electionId) {
+      positionsWithAvailability.value = []
+      return
+    }
+    
+    // Get positions with availability based on partylist selection
+    const { data, error: posError } = await applicationStore.getPositionsWithAvailability(
+      form.value.electionId,
+      form.value.partylistId
+    )
     
     if (posError) throw new Error(posError)
     
-    positionStore.positions = data || []
-    form.value.positionId = null // Reset position selection
+    positionsWithAvailability.value = data || []
+    
+    // Reset position selection if current position is no longer available
+    if (form.value.positionId) {
+      const selectedPosition = positionsWithAvailability.value.find(p => p.id === form.value.positionId)
+      if (selectedPosition && !selectedPosition.available) {
+        form.value.positionId = null
+      }
+    }
   } catch (err) {
     console.error('Error loading positions:', err)
+    positionsWithAvailability.value = []
+  } finally {
+    loadingPositions.value = false
   }
 }
 
@@ -463,6 +507,25 @@ const form = ref({
   candidacyCertificate: null,
   backSubjectRecord: null,
   cor: null
+})
+
+// Computed property for available positions only
+const availablePositions = computed(() => {
+  return positionsWithAvailability.value.filter(pos => pos.available)
+})
+
+// Watch for partylist changes to reload positions
+watch(() => form.value.partylistId, async (newPartylistId, oldPartylistId) => {
+  if (newPartylistId !== oldPartylistId && form.value.electionId) {
+    await loadPositions()
+  }
+})
+
+// Watch for election changes to reload positions
+watch(() => form.value.electionId, async (newElectionId, oldElectionId) => {
+  if (newElectionId !== oldElectionId) {
+    await loadPositions()
+  }
 })
 
 const errors = ref({})
@@ -500,7 +563,7 @@ const removeFile = (field) => {
   filePreviews.value[field] = null
 }
 
-const validateForm = () => {
+const validateForm = async () => {
   const newErrors = {}
   
   if (!form.value.electionId) {
@@ -533,9 +596,25 @@ const validateForm = () => {
   }
   
   // Validate partylist (if position requires it)
-  const selectedPosition = positionStore.positions?.find(p => p.id === form.value.positionId)
+  const selectedPosition = positionsWithAvailability.value.find(p => p.id === form.value.positionId)
   if (selectedPosition?.requires_partylist && !form.value.partylistId) {
     newErrors.partylistId = 'Partylist is required for this position'
+  }
+  
+  // Check if position is still available for the selected partylist
+  if (form.value.positionId && form.value.partylistId) {
+    const { data: availability, error: availError } = await applicationStore.checkPositionAvailability(
+      form.value.electionId,
+      form.value.positionId,
+      form.value.partylistId
+    )
+    
+    if (availError) {
+      newErrors.positionId = 'Failed to verify position availability'
+    } else if (!availability.available) {
+      const positionName = selectedPosition?.title || 'This position'
+      newErrors.positionId = `${positionName} is already occupied by your partylist (${availability.count}/${availability.max} slots filled)`
+    }
   }
   
   // Validate back subject record
@@ -548,7 +627,7 @@ const validateForm = () => {
 }
 
 const handleSubmit = async () => {
-  if (!validateForm()) return
+  if (!(await validateForm())) return
   
   try {
     submitting.value = true
