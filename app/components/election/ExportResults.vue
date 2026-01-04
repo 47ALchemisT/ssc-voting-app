@@ -204,9 +204,8 @@ const exportToPdf = async () => {
       '<div style="font-family: Arial, sans-serif; position: relative;">',
       // Document Title
       '  <div style="position: relative; text-align: center; margin-bottom: 25px; margin-top: 30px;">',
-      '    <div style="display: flex; justify-content: flex-end; font-size: 12px; color: #666; margin-bottom: 8px;">MSUN-____-COMM-____-2025-REV00</div>',
+      '    <div style="display: flex; justify-content: flex-end; font-size: 12px; color: #666; margin-bottom: 8px;">MSUN-____-COMM-____-2025-REV__</div>',
       '    <div style="font-size: 18px; font-weight: 700; color: #000; text-transform: uppercase; margin-bottom: 8px;">ELECTION RESULTS</div>',
-      '    <div style="font-size: 12px; color: #666;">Generated on ' + formattedDate.value + '</div>',
       '  </div>',
     ].join('');
 
@@ -399,6 +398,12 @@ const exportToPdf = async () => {
         undefined,
         'FAST'
       );
+      
+      // Add generated date above footer
+      pdf.setFontSize(10);
+      pdf.setTextColor(100);
+      const dateText = 'Generated on ' + formattedDate.value;
+      pdf.text(dateText, 10, pageHeight - 25);
       
       // Add footer at the bottom
       const footerHeight = 20; // Adjust based on your footer image height
