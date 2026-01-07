@@ -110,7 +110,7 @@ import { ref, onMounted } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import { useRouter } from 'vue-router'
 import CreateElectionModal from './components/create.vue'
-import { useElections } from '~/composables/useElections'
+import { useElections } from '../../../composables/useElections'
 
 definePageMeta({
   middleware: 'auth',
